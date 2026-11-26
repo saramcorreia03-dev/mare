@@ -28,7 +28,7 @@ const EMERG_FIELDS = [
 
 /* ---------- Estado ---------- */
 function H() {
-  const base = { logs: {}, meds: [], appts: [], recovery: false, inhalerReminder: false, emerg: {}, alarms: DEFAULT_ALARMS };
+  const base = { logs: {}, meds: [], appts: [], exams: [], labs: [], recovery: false, inhalerReminder: false, emerg: {}, alarms: DEFAULT_ALARMS };
   S.health = Object.assign(base, S.health || {});
   return S.health;
 }
@@ -164,6 +164,25 @@ function summaryText(days = 30) {
   return lines.join('\n');
 }
 
+function clinicalCard() {
+  const h = H(); if (!h.exams.length && !h.labs.length) return '';
+  const exams = [...h.exams].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  let o = `<div class="card"><h2>Histórico clínico</h2><div class="small">Exames e análises que importaste. Fica só neste aparelho.</div>`;
+  if (exams.length) o += `<div class="stack mt">${exams.map((e) => `<details class="acc"><summary>${fmtShort(e.date)} · ${esc(e.title)}</summary><p>${e.place ? `<b>${esc(e.place)}.</b> ` : ''}${esc(e.result || '')}</p></details>`).join('')}</div>`;
+  if (h.labs.length) {
+    const by = {}; h.labs.forEach((r) => { (by[r.n] = by[r.n] || []).push(r); });
+    o += `<div class="label mt">Análises</div><div class="stack mt">${Object.keys(by).sort((a, b) => a.localeCompare(b, 'pt')).map((n) => {
+      const rows = by[n].sort((a, b) => String(a.d).localeCompare(String(b.d))), r0 = rows[rows.length - 1];
+      const ref = r0.min != null || r0.max != null ? ` (ref. ${r0.min != null ? r0.min : ''}${r0.min != null && r0.max != null ? ' a ' : r0.max != null ? 'até ' : 'a partir de '}${r0.max != null ? r0.max : ''})` : '';
+      return `<div><strong>${esc(n)}</strong><span class="small">${ref} ${esc(r0.u || '')}</span><div class="row mt">${rows.map((r) => {
+        const out = (r.min != null && r.v < r.min) || (r.max != null && r.v > r.max);
+        return `<span class="tag" style="margin:0;${out ? 'background:var(--terra-ink);color:#fff;font-weight:700' : ''}">${String(r.v).replace('.', ',')} · ${fmtShort(r.d)}</span>`;
+      }).join('')}</div></div>`;
+    }).join('')}</div>`;
+  }
+  return o + `</div>`;
+}
+
 function restCard() {
   const l = H().logs[todayStr()] || {}, calm = S.prefs && S.prefs.calm, high = l.overload != null && l.overload >= 6;
   if (!calm && !high) return '';
@@ -236,11 +255,11 @@ VIEWS.saude = function () {
       : `<textarea rows="${rows}" data-c="emerg" data-k="${k}">${esc(h.emerg[k] || '')}</textarea>`}`).join('')}
     <button class="btn small" data-a="printSheet">Imprimir ou guardar PDF</button></div></div>`;
 
-  M += weightsCard() + loadInsightsCard();
+  M += clinicalCard() + weightsCard() + loadInsightsCard();
   M += `<div class="card"><h2>Importar agenda</h2><div class="small">Aulas, fisioterapia, consultas e prazos, a partir de um ficheiro. Ficam só neste aparelho. Dá para repetir sempre que a agenda mudar.</div>
     <div class="row mt"><label class="btn ghost small" style="cursor:pointer;display:inline-block">Escolher ficheiro<input type="file" accept="application/json" data-c="impAgenda" hidden></label></div></div>`;
 
-  M += `<div class="card"><h2>Trazer do dashboard de saúde</h2><div class="small">Escolhe o ficheiro de cópia de segurança do dashboard. Registos, menstruação, ficha e vigilâncias com data passam para aqui, só neste aparelho.</div>
+  M += `<div class="card"><h2>Trazer o histórico (dashboard ou ficheiro)</h2><div class="small">Escolhe o ficheiro de cópia de segurança do dashboard. Registos, menstruação, exames, análises, ficha e vigilâncias com data passam para aqui, só neste aparelho.</div>
     <div class="row mt"><label class="btn ghost small" style="cursor:pointer;display:inline-block">Escolher ficheiro<input type="file" accept="application/json" data-c="impDash" hidden></label></div>
     <div class="small mt">Dica: em Progresso, exporta os dados de vez em quando e guarda o ficheiro no teu Drive.</div></div>`;
 
@@ -335,6 +354,15 @@ Object.assign(C, {
         mens.forEach((d, i) => {
           if (i > 0 && dDiff(mens[i - 1], d) === 1) { const ps = cyc().periods; const last = ps.find((p) => p.start <= d && (!p.end || p.end >= addD(d, -1)) && dDiff(p.start, d) < 12); if (last) last.end = d; return; }
           if (!cyc().periods.some((p) => p.start === d)) cyc().periods.push({ start: d, end: '' });
+        });
+        (data.exams || []).forEach((x) => {
+          if (x && isDate(x.d) && x.t && !h.exams.some((e) => e.date === x.d && e.title === x.t)) h.exams.push({ date: x.d, title: String(x.t), place: String(x.l || ''), result: String(x.r || '') });
+        });
+        (data.labs || []).forEach((x) => {
+          if (x && isDate(x.d) && x.n && x.v != null && !h.labs.some((r) => r.d === x.d && r.n === x.n)) h.labs.push({ d: x.d, n: String(x.n).trim(), v: +x.v, u: x.u || '', min: x.min == null ? null : +x.min, max: x.max == null ? null : +x.max });
+        });
+        (data.meds || []).forEach((x) => {
+          if (x && x.name && !h.meds.some((m) => m.name === x.name)) h.meds.push({ id: newId(), name: String(x.name), dose: String(x.dose || ''), end: isDate(x.end) ? x.end : '' });
         });
         const fi = data.ficha || {}, map = { nome: 'f_nome', cond: 'f_cond', alerg: 'f_alerg', meds: 'f_med', medico: 'f_mf', sangue: 'f_sangue', notas: 'f_notas' };
         Object.entries(map).forEach(([k, src]) => { if (fi[src] && !h.emerg[k]) h.emerg[k] = String(fi[src]); });
