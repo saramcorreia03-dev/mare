@@ -10,12 +10,12 @@ const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const DAYS_LONG = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
 const GROUPS = {
-  pernas:    { label: 'Pernas (unilateral)', color: '#F5B8C4', workout: 'sexta' },
-  core:      { label: 'Lombar + Core',       color: '#A8D8C9', workout: 'quarta' },
-  bracos:    { label: 'Braços',              color: '#B9C8F2', workout: 'quinta' },
-  saltos:    { label: 'Saltos e equilíbrio', color: '#F7D9A6', workout: 'terca' },
-  caminhada: { label: 'Caminhada',           color: '#D9CBEB' },
-  descanso:  { label: 'Descanso',            color: '#8F86A0' }
+  pernas:    { label: 'Pernas (unilateral)', color: '#D9774F', workout: 'sexta' },
+  core:      { label: 'Lombar + Core',       color: '#A9BD7E', workout: 'quarta' },
+  bracos:    { label: 'Braços',              color: '#E6AE55', workout: 'quinta' },
+  saltos:    { label: 'Saltos e equilíbrio', color: '#F2D49A', workout: 'terca' },
+  caminhada: { label: 'Caminhada',           color: '#C9A27E' },
+  descanso:  { label: 'Descanso',            color: '#8E7766' }
 };
 
 const TEMPLATES = {
@@ -293,13 +293,16 @@ const VIEWS = {
     const gid = p && p.set ? p.days[idx] : null;
     const g = gid ? GROUPS[gid] : null;
     const ci = S.checkins[today] || {};
-    let h = `<div class="sub">${DAYS_LONG[idx]}, ${fmtShort(today)}</div>`;
+    let h = `<div class="quote">${esc(typeof dailyQuote === 'function' ? dailyQuote() : '')}</div><div class="sub" style="text-align:center">${DAYS_LONG[idx]}, ${fmtShort(today)}</div>`;
+    if (typeof healthBanner === 'function') h += healthBanner();
 
     if (idx === 6) {
       h += `<div class="card note"><strong>Domingo é dia de maré.</strong><div class="small">Escolhe a maré, o treino e as refeições da próxima semana. <button class="link" data-a="goNext">Abrir plano</button></div></div>`;
     }
 
-    if (!g) {
+    if (typeof recoveryOn === 'function' && recoveryOn()) {
+      h += recoveryCard();
+    } else if (!g) {
       h += `<div class="card"><h2>Ainda não há plano para esta semana</h2><div class="small">Escolhe a maré e os dias em "Semana".</div><div class="mt"><button class="btn" data-a="tab" data-v="semana">Planear a semana</button></div></div>`;
     } else {
       const w = g.workout ? WORKOUTS.find((x) => x.id === g.workout) : null;
@@ -378,7 +381,9 @@ const VIEWS = {
 
   treinos() {
     let h = `<div class="sub">Escolhe um treino e carrega em começar. O ecrã fica ligado enquanto o timer corre.</div>`;
-    WORKOUTS.forEach((w) => {
+    const rec = typeof recoveryOn === 'function' && recoveryOn() && !ui.showAll;
+    if (rec) h += `<div class="card warn"><strong>Modo recuperação ligado.</strong><div class="small">Só aparece o treino suave. <button class="link" data-a="showAll">Ver todos os treinos</button></div></div>`;
+    WORKOUTS.filter((w) => !rec || w.id === 'recup').forEach((w) => {
       const mins = Math.round(buildSeq(w).reduce((a, s) => a + s.d, 0) / 60);
       h += `<div class="card"><div class="between"><div><div class="big" style="font-size:17px">${esc(w.title)}</div><div class="small">${esc(w.short)} · ~${mins} min</div></div><button class="btn small" data-a="openTimer" data-id="${w.id}">Começar</button></div></div>`;
     });
@@ -445,8 +450,8 @@ function weightChart(ws) {
   const pt = (w, i) => [10 + (i / (ws.length - 1)) * (W - 20), H - 10 - ((w.kg - min) / (max - min || 1)) * (H - 20)];
   const pts = ws.map(pt);
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;margin-top:14px" role="img" aria-label="Evolução do peso">
-    <polyline fill="none" stroke="#A8D8C9" stroke-width="2.5" points="${pts.map((p) => p.join(',')).join(' ')}"/>
-    ${pts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#F5B8C4"/>`).join('')}</svg>`;
+    <polyline fill="none" stroke="#A9BD7E" stroke-width="2.5" points="${pts.map((p) => p.join(',')).join(' ')}"/>
+    ${pts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#E6AE55"/>`).join('')}</svg>`;
 }
 
 /* ---------- Ações ---------- */
@@ -701,5 +706,4 @@ function drawTimer() {
   updateTime();
 }
 
-/* ---------- Arranque ---------- */
-render();
+/* O arranque (render) está no fim de saude.js */
