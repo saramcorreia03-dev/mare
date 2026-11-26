@@ -4,7 +4,7 @@
   --ink2: #2C1A14;
   --ink3: #3A2219;
   --foam: #F7E8D0;
-  --mute: #C7A98B;
+  --mute: #E3C9A8;
   --mint: #A9BD7E;
   --rose: #E6AE55;
   --lilac: #C9714E;
@@ -15,11 +15,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { background:
-  radial-gradient(ellipse 120% 60% at 50% -8%, rgba(201, 113, 78, .55), transparent 65%),
-  radial-gradient(ellipse 80% 50% at 100% 100%, rgba(106, 130, 70, .30), transparent 70%),
-  var(--ink);
-  background-attachment: fixed; }
+html { background: linear-gradient(180deg, #7A3023 0%, #5E2219 45%, #421812 100%) fixed; min-height: 100%; }
 body { margin: 0; color: var(--foam); }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -33,7 +29,7 @@ h1 { margin: 4px 0 0; font-family: var(--serif); font-size: 30px; font-weight: 5
 
 main { max-width: 480px; margin: 0 auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
 
-.card { background: rgba(44, 26, 20, .82); border: 1px solid var(--line); border-radius: 20px; padding: 16px; box-shadow: 0 6px 24px rgba(0, 0, 0, .18); }
+.card { background: rgba(28, 11, 8, .62); border: 1px solid rgba(242, 212, 154, .22); border-radius: 20px; padding: 16px; box-shadow: 0 6px 24px rgba(0, 0, 0, .18); }
 .card h2 { margin: 0 0 6px; font-family: var(--serif); font-size: 18px; font-weight: 600; }
 .card.note { border-color: var(--peach); }
 .sub { font-size: 13px; color: var(--mute); }
@@ -90,7 +86,7 @@ select { padding: 8px 10px; font-size: 13px; }
 .wk .t { font-weight: 700; font-size: 15px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 99px; margin-right: 8px; }
 
-nav#nav { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(29, 18, 14, .94); backdrop-filter: blur(8px); border-top: 1px solid var(--line); display: flex; padding: 8px 4px calc(8px + env(safe-area-inset-bottom)); z-index: 5; }
+nav#nav { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(36, 13, 10, .96); backdrop-filter: blur(8px); border-top: 1px solid var(--line); display: flex; padding: 8px 4px calc(8px + env(safe-area-inset-bottom)); z-index: 5; }
 nav#nav button { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; color: var(--mute); font-size: 11px; font-weight: 600; opacity: .8; }
 nav#nav button.on { color: var(--rose); opacity: 1; }
 nav#nav svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -125,10 +121,9 @@ nav#nav svg { width: 22px; height: 22px; stroke: currentColor; fill: none; strok
 .ttop { display: flex; justify-content: space-between; align-items: center; }
 .tdone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
 
-/* Anéis do sol, ao fundo */
-body::before { content: ""; position: fixed; left: 50%; bottom: -34vh; width: 120vw; max-width: 900px; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; z-index: -1; pointer-events: none; opacity: .5;
-  background: repeating-radial-gradient(circle, rgba(201, 113, 78, .55) 0 26px, rgba(230, 174, 85, .38) 26px 52px, rgba(242, 212, 154, .30) 52px 78px, rgba(169, 189, 126, .30) 78px 104px);
-  -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 70%); mask-image: radial-gradient(circle, #000 25%, transparent 70%); }
+/* Arcos do sol, no fim da página */
+.arcs { width: 220px; height: 110px; margin: 18px auto 0; border-radius: 110px 110px 0 0; opacity: .55;
+  background: repeating-radial-gradient(circle at 50% 100%, #C9714E 0 10px, #E6AE55 10px 12px, #F2D49A 12px 22px, #E6AE55 22px 24px, #A9BD7E 24px 34px, transparent 34px 38px); }
 
 .quote { font-family: var(--serif); font-style: italic; font-size: 19px; text-align: center; padding: 6px 12px 2px; color: var(--peach); }
 .sun { display: block; margin: 0 auto 4px; }
