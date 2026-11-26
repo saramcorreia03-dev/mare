@@ -47,7 +47,8 @@ function ensureLog() {
 }
 function hardDay(l) {
   if (!l) return false;
-  return (l.pain != null && l.pain >= 6) || (l.energy != null && l.energy <= 3) || (l.sleep != null && l.sleep !== '' && l.sleep < 5) ||
+  return (l.pain != null && l.pain >= 6) || (l.painAM != null && l.painAM >= 6) || (l.energy != null && l.energy <= 3) ||
+    (l.sleepQ != null && l.sleepQ <= 3) || (l.sleep != null && l.sleep !== '' && l.sleep < 5) ||
     (l.sym || []).some((s) => HARD_SYMPTOMS.includes(s));
 }
 function downloadFile(name, text, type) {
@@ -86,9 +87,13 @@ WORKOUTS.push({
 function healthBanner() {
   const h = H(), l = h.logs[todayStr()];
   let o = '';
-  const filled = l && (l.pain != null || l.energy != null || l.mood != null);
-  if (!filled) {
-    o += `<div class="card"><div class="between"><div><strong>Como estás hoje?</strong><div class="small">Registo de 10 segundos.</div></div><button class="btn small" data-a="tab" data-v="saude">Registar</button></div></div>`;
+  const hr = new Date().getHours();
+  const amDone = l && (l.energy != null || l.sleep != null || l.painAM != null);
+  const pmDone = l && (l.mood != null || l.pain != null);
+  if (hr < 15 && !amDone) {
+    o += `<div class="card"><div class="between"><div><strong>Bom dia. Como acordaste?</strong><div class="small">Registo da manhã, 30 segundos.</div></div><button class="btn small" data-a="goReg" data-v="manha">Registar</button></div></div>`;
+  } else if (hr >= 19 && !pmDone) {
+    o += `<div class="card"><div class="between"><div><strong>Como correu o dia?</strong><div class="small">Registo da noite, 1 minuto.</div></div><button class="btn small" data-a="goReg" data-v="noite">Registar</button></div></div>`;
   } else if (hardDay(l) && !h.recovery) {
     o += `<div class="card warn"><strong>Hoje o corpo pede maré baixa.</strong><div class="small">Caminhada leve e mobilidade chegam. Queres só os treinos suaves?</div><div class="mt"><button class="btn small" data-a="recovery" data-v="1">Ligar modo recuperação</button></div></div>`;
   }
@@ -145,16 +150,19 @@ VIEWS.saude = function () {
 
   let o = `<div class="sub">Fica só neste aparelho. Não é diagnóstico: serve para veres padrões e levares à tua médica.</div>`;
 
-  o += `<div class="card"><h2>Como estás hoje</h2>
-    ${sl('pain', 'Dor')}${sl('energy', 'Energia')}${sl('mood', 'Humor')}
+  const morning = `<div class="card" id="c-manha"><h2>🌅 Ao acordar</h2><div class="small">Por volta das 8h30.</div>
     <div class="lbl"><span>Horas de sono</span></div>
     <input type="number" inputmode="decimal" step="0.5" min="0" max="16" placeholder="ex: 7" value="${l.sleep == null ? '' : l.sleep}" data-c="hlog" data-k="sleep">
+    ${sl('sleepQ', 'Como dormiste')}${sl('painAM', 'Dor ou formigueiro ao levantar')}${sl('energy', 'Energia')}</div>`;
+  const night = `<div class="card" id="c-noite"><h2>🌙 À noite</h2><div class="small">Por volta das 22h30, antes de dormir.</div>
+    ${sl('pain', 'Dor no pior momento do dia')}${sl('mood', 'Humor')}
     <div class="lbl"><span>Sinais de hoje</span></div>
     <div class="row">${SYMPTOMS.map((s) => pill(s, (l.sym || []).includes(s), 'sym', `data-v="${esc(s)}"`)).join('')}</div>
     <div class="lbl"><span>Inalador (vezes hoje)</span></div>
     <div class="row"><button class="btn ghost small" data-a="inhaler" data-v="-1">−</button><b>${l.inhaler || 0}</b><button class="btn ghost small" data-a="inhaler" data-v="1">+</button></div>
-    <div class="lbl"><span>Nota</span></div>
+    <div class="lbl"><span>Nota (o que caiu mal ou bem)</span></div>
     <textarea rows="2" data-c="hnote" placeholder="o que piorou ou melhorou">${esc(l.notes || '')}</textarea></div>`;
+  o += new Date().getHours() < 15 ? morning + night : night + morning;
 
   o += `<div class="card ${h.recovery ? 'good' : ''}"><div class="between"><div><h2>Modo recuperação</h2><div class="small">Só caminhada e mobilidade suave. Os outros treinos ficam escondidos.</div></div>
     <button class="btn small ${h.recovery ? 'mint' : ''}" data-a="recovery" data-v="${h.recovery ? 0 : 1}">${h.recovery ? 'Ligado' : 'Ligar'}</button></div>
@@ -200,6 +208,7 @@ VIEWS.saude = function () {
 
 /* ---------- Ações ---------- */
 Object.assign(A, {
+  goReg: (d) => { ui.tab = 'saude'; ui.focus = 'c-' + d.v; render(); },
   recovery: (d) => { H().recovery = d.v === '1'; ui.showAll = false; save(); render(); toast(d.v === '1' ? 'Modo recuperação ligado' : 'Modo recuperação desligado'); },
   showAll: () => { ui.showAll = true; render(); },
   inhRem: () => { const h = H(); h.inhalerReminder = !h.inhalerReminder; save(); render(); },
@@ -285,4 +294,5 @@ document.addEventListener('input', (e) => {
 });
 
 /* ---------- Arranque ---------- */
+if (/^#(manha|noite)$/.test(location.hash)) { ui.tab = 'saude'; ui.focus = 'c-' + location.hash.slice(1); }
 render();

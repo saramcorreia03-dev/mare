@@ -10,12 +10,12 @@ const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const DAYS_LONG = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
 const GROUPS = {
-  pernas:    { label: 'Pernas (unilateral)', color: '#D9774F', workout: 'sexta' },
-  core:      { label: 'Lombar + Core',       color: '#A9BD7E', workout: 'quarta' },
-  bracos:    { label: 'Braços',              color: '#E6AE55', workout: 'quinta' },
-  saltos:    { label: 'Saltos e equilíbrio', color: '#F2D49A', workout: 'terca' },
-  caminhada: { label: 'Caminhada',           color: '#C9A27E' },
-  descanso:  { label: 'Descanso',            color: '#8E7766' }
+  pernas:    { label: 'Pernas (unilateral)', color: '#B8532F', workout: 'sexta' },
+  core:      { label: 'Lombar + Core',       color: '#52702F', workout: 'quarta' },
+  bracos:    { label: 'Braços',              color: '#A8691A', workout: 'quinta' },
+  saltos:    { label: 'Saltos e equilíbrio', color: '#8A6A1F', workout: 'terca' },
+  caminhada: { label: 'Caminhada',           color: '#7A5842' },
+  descanso:  { label: 'Descanso',            color: '#8C7260' }
 };
 
 const TEMPLATES = {
@@ -268,7 +268,8 @@ function render() {
   $('#title').textContent = t.title;
   $('#view').innerHTML = VIEWS[ui.tab]();
   renderNav();
-  window.scrollTo(0, y);
+  const f = ui.focus && document.getElementById(ui.focus);
+  if (f) { ui.focus = null; f.scrollIntoView(); } else window.scrollTo(0, y);
 }
 
 let toastTimer = null;
@@ -450,8 +451,8 @@ function weightChart(ws) {
   const pt = (w, i) => [10 + (i / (ws.length - 1)) * (W - 20), H - 10 - ((w.kg - min) / (max - min || 1)) * (H - 20)];
   const pts = ws.map(pt);
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;margin-top:14px" role="img" aria-label="Evolução do peso">
-    <polyline fill="none" stroke="#A9BD7E" stroke-width="2.5" points="${pts.map((p) => p.join(',')).join(' ')}"/>
-    ${pts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#E6AE55"/>`).join('')}</svg>`;
+    <polyline fill="none" stroke="#52702F" stroke-width="2.5" points="${pts.map((p) => p.join(',')).join(' ')}"/>
+    ${pts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#C9714E"/>`).join('')}</svg>`;
 }
 
 /* ---------- Ações ---------- */
