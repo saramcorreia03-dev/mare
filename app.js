@@ -296,6 +296,7 @@ const VIEWS = {
     const g = gid ? GROUPS[gid] : null;
     const ci = S.checkins[today] || {};
     let h = `<div class="quote">${esc(typeof dailyQuote === 'function' ? dailyQuote() : '')}</div><div class="sub" style="text-align:center">${DAYS_LONG[idx]}, ${fmtShort(today)}</div>`;
+    if (typeof nextStepCard === 'function') h += nextStepCard() + agendaCard();
     if (typeof healthBanner === 'function') h += healthBanner();
 
     if (idx === 6) {
@@ -311,6 +312,7 @@ const VIEWS = {
       h += `<div class="card" style="border-color:${g.color}"><div class="label" style="color:${g.color}">Hoje</div><div class="big" style="color:${g.color}">${esc(g.label)}</div>`;
       if (gid === 'descanso') h += `<div class="small mt">Dia de descanso. Podes fazer só um alongamento suave.</div>`;
       if (gid === 'caminhada') h += `<div class="small mt">30 a 45 minutos de caminhada. Se for com o cão, melhor ainda.</div>`;
+      if (w && typeof workoutHint === 'function') h += workoutHint(w);
       if (w) h += `<div class="mt"><button class="btn" data-a="openTimer" data-id="${w.id}">Abrir timer · ${esc(w.title)}</button></div>`;
       h += `</div>`;
 
@@ -349,12 +351,14 @@ const VIEWS = {
       <div class="sub">${fmtShort(k)} a ${fmtShort(ds(sun))}</div>`;
 
     h += `<div class="card"><h2>Que maré é esta semana?</h2><div class="small">Escolhe o modo. Não é falhar, é ritmo.</div>
-      <div class="row mt">${MODES.map((m) => pill(m.label, p.mode === m.id && p.set, 'mode', `data-v="${m.id}"`)).join('')}</div></div>`;
+      <div class="row mt">${MODES.map((m) => pill(m.label, p.mode === m.id && p.set, 'mode', `data-v="${m.id}"`)).join('')}</div>
+      <div class="mt"><button class="btn ghost small" data-a="repeatWeek">Repetir a semana anterior</button></div></div>`;
 
     h += `<div class="card"><h2>Plano de treino</h2><div class="stack">` +
       DAYS.map((d, i) => `<label class="dayrow"><span>${d}</span><select data-c="dayGroup" data-i="${i}">${
         Object.entries(GROUPS).map(([id, g]) => `<option value="${id}"${p.days[i] === id ? ' selected' : ''}>${g.label}</option>`).join('')
-      }</select></label>`).join('') + `</div></div>`;
+      }</select>${typeof agendaTag === 'function' ? agendaTag(i) : ''}</label>`).join('') + `</div></div>`;
+    if (typeof weekAgenda === 'function') h += weekAgenda();
 
     // Refeições por dia
     const filtered = MEALS.filter((m) => !ui.ing.length || m.base.some((b) => ui.ing.includes(b)));

@@ -94,17 +94,25 @@ WORKOUTS.push({
 });
 
 /* ---------- Cartões na página Hoje ---------- */
+function nextStepCard() {
+  const h = H(), l = h.logs[todayStr()], hr = new Date().getHours();
+  const amDone = l && (l.energy != null || l.sleep != null || l.painAM != null);
+  const pmDone = l && (l.mood != null || l.pain != null);
+  const left = physioToday().filter((e) => !((l && l.physio) || {})[e.id]).length;
+  const box = (title, sub, btn) => `<div class="card note"><div class="label">Próximo passo</div><div class="between"><div><strong>${title}</strong><div class="small">${sub}</div></div>${btn}</div></div>`;
+  if (hr < 15 && !amDone) return box('Bom dia. Como acordaste?', 'Registo da manhã, 30 segundos.', `<button class="btn small" data-a="goReg" data-v="manha">Registar</button>`);
+  if (left) return box('Fisioterapia de hoje', `${left} exercício(s) por fazer.`, `<button class="btn small" data-a="goSub" data-v="fisio">Ver</button>`);
+  if (hr >= 19 && !pmDone) return box('Como correu o dia?', 'Registo da noite, 1 minuto.', `<button class="btn small" data-a="goReg" data-v="noite">Registar</button>`);
+  return '';
+}
+
 function healthBanner() {
   const h = H(), l = h.logs[todayStr()];
   let o = '';
   const hr = new Date().getHours();
   const amDone = l && (l.energy != null || l.sleep != null || l.painAM != null);
   const pmDone = l && (l.mood != null || l.pain != null);
-  if (hr < 15 && !amDone) {
-    o += `<div class="card"><div class="between"><div><strong>Bom dia. Como acordaste?</strong><div class="small">Registo da manhã, 30 segundos.</div></div><button class="btn small" data-a="goReg" data-v="manha">Registar</button></div></div>`;
-  } else if (hr >= 19 && !pmDone) {
-    o += `<div class="card"><div class="between"><div><strong>Como correu o dia?</strong><div class="small">Registo da noite, 1 minuto.</div></div><button class="btn small" data-a="goReg" data-v="noite">Registar</button></div></div>`;
-  } else if (l && l.overload != null && l.overload >= 7 && !(S.prefs && S.prefs.calm)) {
+  if (l && l.overload != null && l.overload >= 7 && !(S.prefs && S.prefs.calm)) {
     o += `<div class="card warn"><strong>Dia com muitos estímulos.</strong><div class="small">Menos ecrã, mais silêncio e ar livre. Queres o modo calmo?</div><div class="mt"><button class="btn small" data-a="calm">Ligar modo calmo</button></div></div>`;
   } else if (hardDay(l) && !h.recovery) {
     o += `<div class="card warn"><strong>Hoje o corpo pede maré baixa.</strong><div class="small">Caminhada leve e mobilidade chegam. Queres só os treinos suaves?</div><div class="mt"><button class="btn small" data-a="recovery" data-v="1">Ligar modo recuperação</button></div></div>`;
@@ -226,6 +234,9 @@ VIEWS.saude = function () {
       ? `<input type="text" data-c="emerg" data-k="${k}" value="${esc(h.emerg[k] || '')}">`
       : `<textarea rows="${rows}" data-c="emerg" data-k="${k}">${esc(h.emerg[k] || '')}</textarea>`}`).join('')}
     <button class="btn small" data-a="printSheet">Imprimir ou guardar PDF</button></div></div>`;
+
+  M += `<div class="card"><h2>Importar agenda</h2><div class="small">Aulas, fisioterapia, consultas e prazos, a partir de um ficheiro. Ficam só neste aparelho. Dá para repetir sempre que a agenda mudar.</div>
+    <div class="row mt"><label class="btn ghost small" style="cursor:pointer;display:inline-block">Escolher ficheiro<input type="file" accept="application/json" data-c="impAgenda" hidden></label></div></div>`;
 
   M += `<div class="card"><h2>Trazer do dashboard de saúde</h2><div class="small">Escolhe o ficheiro de cópia de segurança do dashboard. Registos, menstruação, ficha e vigilâncias com data passam para aqui, só neste aparelho.</div>
     <div class="row mt"><label class="btn ghost small" style="cursor:pointer;display:inline-block">Escolher ficheiro<input type="file" accept="application/json" data-c="impDash" hidden></label></div>
