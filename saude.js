@@ -97,6 +97,7 @@ function healthBanner() {
   } else if (hardDay(l) && !h.recovery) {
     o += `<div class="card warn"><strong>Hoje o corpo pede maré baixa.</strong><div class="small">Caminhada leve e mobilidade chegam. Queres só os treinos suaves?</div><div class="mt"><button class="btn small" data-a="recovery" data-v="1">Ligar modo recuperação</button></div></div>`;
   }
+  o += physioBanner() + cycleBanner();
   h.meds.forEach((m) => {
     if (!isDate(m.end)) return;
     const d = daysUntil(m.end);
@@ -148,7 +149,7 @@ VIEWS.saude = function () {
   const sl = (k, label) => `<div class="lbl"><span>${label}</span><b id="v-${k}">${val(k)}</b></div>
     <input class="range" type="range" min="0" max="10" step="1" value="${l[k] == null ? 5 : l[k]}" data-c="hlog" data-k="${k}" data-live="v-${k}" aria-label="${label}">`;
 
-  let o = `<div class="sub">Fica só neste aparelho. Não é diagnóstico: serve para veres padrões e levares à tua médica.</div>`;
+  let R = '', M = '';
 
   const morning = `<div class="card" id="c-manha"><h2>🌅 Ao acordar</h2><div class="small">Por volta das 8h30.</div>
     <div class="lbl"><span>Horas de sono</span></div>
@@ -162,53 +163,65 @@ VIEWS.saude = function () {
     <div class="row"><button class="btn ghost small" data-a="inhaler" data-v="-1">−</button><b>${l.inhaler || 0}</b><button class="btn ghost small" data-a="inhaler" data-v="1">+</button></div>
     <div class="lbl"><span>Nota (o que caiu mal ou bem)</span></div>
     <textarea rows="2" data-c="hnote" placeholder="o que piorou ou melhorou">${esc(l.notes || '')}</textarea></div>`;
-  o += new Date().getHours() < 15 ? morning + night : night + morning;
+  R += new Date().getHours() < 15 ? morning + night : night + morning;
 
-  o += `<div class="card ${h.recovery ? 'good' : ''}"><div class="between"><div><h2>Modo recuperação</h2><div class="small">Só caminhada e mobilidade suave. Os outros treinos ficam escondidos.</div></div>
+  R += `<div class="card ${h.recovery ? 'good' : ''}"><div class="between"><div><h2>Modo recuperação</h2><div class="small">Só caminhada e mobilidade suave. Os outros treinos ficam escondidos.</div></div>
     <button class="btn small ${h.recovery ? 'mint' : ''}" data-a="recovery" data-v="${h.recovery ? 0 : 1}">${h.recovery ? 'Ligado' : 'Ligar'}</button></div>
     <div class="row mt"><button class="pill${h.inhalerReminder ? ' on' : ''}" data-a="inhRem">Lembrar o inalador nos dias de treino</button></div></div>`;
 
-  o += `<div class="card"><h2>Medicação</h2>`;
-  if (!h.meds.length) o += `<div class="small">Ainda sem medicação. Junta abaixo, com o fim da receita para te avisar a tempo.</div>`;
+  M += `<div class="card"><h2>Medicação</h2>`;
+  if (!h.meds.length) M += `<div class="small">Ainda sem medicação. Junta abaixo, com o fim da receita para te avisar a tempo.</div>`;
   h.meds.forEach((m) => {
     let badge = '';
     if (isDate(m.end)) { const d = daysUntil(m.end); badge = d < 0 ? '<span class="badge">terminou</span>' : d <= 14 ? `<span class="badge soon">${d} d</span>` : ''; }
-    o += `<div class="med"><div><strong>${esc(m.name)}</strong>${badge}<div class="small">${esc(m.dose || '')}${isDate(m.end) ? ` · até ${fmtShort(m.end)}` : ''}</div></div>
+    M += `<div class="med"><div><strong>${esc(m.name)}</strong>${badge}<div class="small">${esc(m.dose || '')}${isDate(m.end) ? ` · até ${fmtShort(m.end)}` : ''}</div></div>
       <div class="row nowrap"><button class="chk${l.meds && l.meds[m.id] ? ' on' : ''}" data-a="medTaken" data-id="${m.id}" aria-label="Tomada hoje">✓</button><button class="x" data-a="delMed" data-id="${m.id}" aria-label="Apagar">×</button></div></div>`;
   });
-  o += `<div class="stack mt"><input type="text" id="hm-name" placeholder="Medicamento"><input type="text" id="hm-dose" placeholder="Dose e horas (ex: 1 comprimido às 8h)">
+  M += `<div class="stack mt"><input type="text" id="hm-name" placeholder="Medicamento"><input type="text" id="hm-dose" placeholder="Dose e horas (ex: 1 comprimido às 8h)">
     <label class="small">Fim da receita (opcional)</label><input type="date" id="hm-end"><button class="btn small" data-a="addMed">Adicionar</button></div></div>`;
 
   const appts = [...h.appts].sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  o += `<div class="card"><h2>Consultas e vigilâncias</h2>`;
-  if (!appts.length) o += `<div class="small">Exames, consultas, análises a repetir. Cada um pode ir para o teu calendário.</div>`;
+  M += `<div class="card"><h2>Consultas e vigilâncias</h2>`;
+  if (!appts.length) M += `<div class="small">Exames, consultas, análises a repetir. Cada um pode ir para o teu calendário.</div>`;
   appts.forEach((a) => {
     const past = isDate(a.date) && daysUntil(a.date) < 0;
-    o += `<div class="med" style="${past ? 'opacity:.5' : ''}"><div><strong>${esc(a.title)}</strong><div class="small">${isDate(a.date) ? fmtShort(a.date) : 'sem data'}</div></div>
+    M += `<div class="med" style="${past ? 'opacity:.5' : ''}"><div><strong>${esc(a.title)}</strong><div class="small">${isDate(a.date) ? fmtShort(a.date) : 'sem data'}</div></div>
       <div class="row nowrap">${isDate(a.date) ? `<button class="btn ghost small" data-a="ics" data-id="${a.id}">Calendário</button>` : ''}<button class="x" data-a="delAppt" data-id="${a.id}" aria-label="Apagar">×</button></div></div>`;
   });
-  o += `<div class="stack mt"><input type="text" id="ha-title" placeholder="Ex: ecocardiograma"><input type="date" id="ha-date"><button class="btn small" data-a="addAppt">Adicionar</button></div></div>`;
+  M += `<div class="stack mt"><input type="text" id="ha-title" placeholder="Ex: ecocardiograma"><input type="date" id="ha-date"><button class="btn small" data-a="addAppt">Adicionar</button></div></div>`;
 
-  o += `<div class="card note"><h2>Sinais de alarme</h2><textarea rows="4" data-c="alarms">${esc(h.alarms)}</textarea><div class="small mt">Podes editar com o que a tua médica te disse.</div></div>`;
+  M += `<div class="card note"><h2>Sinais de alarme</h2><textarea rows="4" data-c="alarms">${esc(h.alarms)}</textarea><div class="small mt">Podes editar com o que a tua médica te disse.</div></div>`;
 
-  o += `<div class="card"><h2>Resumo para a consulta</h2><textarea rows="7" readonly id="summary">${esc(summaryText())}</textarea>
+  M += `<div class="card"><h2>Resumo para a consulta</h2><textarea rows="7" readonly id="summary">${esc(summaryText())}</textarea>
     <div class="row mt"><button class="btn ghost small" data-a="copySummary">Copiar</button></div></div>`;
 
-  o += `<div class="card"><h2>Ficha de emergência</h2><div class="small">Para imprimires ou guardares em PDF.</div>
+  M += `<div class="card"><h2>Ficha de emergência</h2><div class="small">Para imprimires ou guardares em PDF.</div>
     <div class="stack mt">${EMERG_FIELDS.map(([k, label, rows]) => `<label class="small">${label}</label>${rows === 1
       ? `<input type="text" data-c="emerg" data-k="${k}" value="${esc(h.emerg[k] || '')}">`
       : `<textarea rows="${rows}" data-c="emerg" data-k="${k}">${esc(h.emerg[k] || '')}</textarea>`}`).join('')}
     <button class="btn small" data-a="printSheet">Imprimir ou guardar PDF</button></div></div>`;
 
-  o += `<div class="card"><h2>Trazer do dashboard de saúde</h2><div class="small">Escolhe o ficheiro de cópia de segurança do dashboard. Registos, ficha e vigilâncias com data passam para aqui, só neste aparelho.</div>
+  M += `<div class="card"><h2>Trazer do dashboard de saúde</h2><div class="small">Escolhe o ficheiro de cópia de segurança do dashboard. Registos, menstruação, ficha e vigilâncias com data passam para aqui, só neste aparelho.</div>
     <div class="row mt"><label class="btn ghost small" style="cursor:pointer;display:inline-block">Escolher ficheiro<input type="file" accept="application/json" data-c="impDash" hidden></label></div>
     <div class="small mt">Dica: em Progresso, exporta os dados de vez em quando e guarda o ficheiro no teu Drive.</div></div>`;
+
+
+
+  const sub = ui.sub || 'registo';
+  const tabs = [['registo', 'Registo'], ['ciclo', 'Ciclo'], ['fisio', 'Fisio'], ['mais', 'Mais']];
+  let o = `<div class="row nowrap">${tabs.map(([id, lb]) => pill(lb, sub === id, 'goSub', `data-v="${id}"`)).join('')}</div>`;
+  o += `<div class="sub">Fica só neste aparelho. Não é diagnóstico: serve para veres padrões e levares à tua médica.</div>`;
+  if (sub === 'ciclo') o += cicloView();
+  else if (sub === 'fisio') o += fisioView();
+  else if (sub === 'mais') o += M;
+  else o += R;
   return o;
 };
 
 /* ---------- Ações ---------- */
 Object.assign(A, {
-  goReg: (d) => { ui.tab = 'saude'; ui.focus = 'c-' + d.v; render(); },
+  goReg: (d) => { ui.tab = 'saude'; ui.sub = 'registo'; ui.focus = 'c-' + d.v; render(); },
+  goSub: (d) => { ui.tab = 'saude'; ui.sub = d.v; window.scrollTo(0, 0); render(); },
   recovery: (d) => { H().recovery = d.v === '1'; ui.showAll = false; save(); render(); toast(d.v === '1' ? 'Modo recuperação ligado' : 'Modo recuperação desligado'); },
   showAll: () => { ui.showAll = true; render(); },
   inhRem: () => { const h = H(); h.inhalerReminder = !h.inhalerReminder; save(); render(); },
@@ -274,6 +287,11 @@ Object.assign(C, {
           if (e.notes && !l.notes) l.notes = String(e.notes);
           h.logs[date] = l; nDays++;
         });
+        const mens = Object.keys(data.days || {}).filter((d) => isDate(d) && data.days[d] && data.days[d].mens).sort();
+        mens.forEach((d, i) => {
+          if (i > 0 && dDiff(mens[i - 1], d) === 1) { const ps = cyc().periods; const last = ps.find((p) => p.start <= d && (!p.end || p.end >= addD(d, -1)) && dDiff(p.start, d) < 12); if (last) last.end = d; return; }
+          if (!cyc().periods.some((p) => p.start === d)) cyc().periods.push({ start: d, end: '' });
+        });
         const fi = data.ficha || {}, map = { nome: 'f_nome', cond: 'f_cond', alerg: 'f_alerg', meds: 'f_med', medico: 'f_mf', sangue: 'f_sangue', notas: 'f_notas' };
         Object.entries(map).forEach(([k, src]) => { if (fi[src] && !h.emerg[k]) h.emerg[k] = String(fi[src]); });
         const contact = [fi.f_cont, fi.f_tel].filter(Boolean).join(' · ');
@@ -294,5 +312,5 @@ document.addEventListener('input', (e) => {
 });
 
 /* ---------- Arranque ---------- */
-if (/^#(manha|noite)$/.test(location.hash)) { ui.tab = 'saude'; ui.focus = 'c-' + location.hash.slice(1); }
+if (/^#(manha|noite)$/.test(location.hash)) { ui.tab = 'saude'; ui.sub = 'registo'; ui.focus = 'c-' + location.hash.slice(1); }
 render();
