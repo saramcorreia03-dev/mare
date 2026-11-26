@@ -150,3 +150,10 @@ nav#nav svg { width: 22px; height: 22px; stroke: currentColor; fill: none; strok
 .acc summary { font-weight: 700; cursor: pointer; }
 .acc p { margin: 8px 0 0; font-size: 13.5px; color: var(--text); }
 input[type=time] { font: inherit; color: var(--text); background: rgba(255, 255, 255, .7); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; color-scheme: light; }
+
+/* Modo calmo: sem decoração, tons suaves, sem animações */
+body.calm .quote { display: none; }
+html:has(body.calm) { background: linear-gradient(180deg, #F7EEDD, #F1E3CB); }
+body.calm * { transition: none !important; animation: none !important; }
+body.calm #timer { background: linear-gradient(180deg, #F7EEDD, #F1E3CB); }
+body.calm .card { box-shadow: none; }

@@ -9,7 +9,9 @@
    ============================================================ */
 
 const SYMPTOMS = ['Enxaqueca', 'Tosse ou pieira', 'Cólicas', 'Dormência ou formigueiro', 'Dor de barriga',
-  'Cansaço fora do normal', 'Tontura', 'Sensibilidade a sons ou luz'];
+  'Cansaço fora do normal', 'Tontura', 'Sensibilidade a sons ou luz', 'Cansaço mental', 'Irritabilidade ou choro', 'Tensão no corpo'];
+const LOADS = ['Barulho', 'Luzes ou ecrãs', 'Muita gente', 'Prazos ou imprevistos'];
+const RESTS = [['cao', '🐕 Passeio calmo'], ['musica', '🎧 Música suave'], ['banho', '🛁 Banho'], ['resp', '🌬️ Respirar']];
 const HARD_SYMPTOMS = ['Enxaqueca', 'Cólicas', 'Dormência ou formigueiro', 'Tontura'];
 const DEFAULT_ALARMS = 'Dor no peito, falta de ar forte, desmaio, fraqueza súbita num braço ou numa perna, dor de cabeça súbita e muito forte, sangue nos vómitos ou fezes pretas: liga 112 ou vai à urgência.';
 const QUOTES = [
@@ -21,7 +23,7 @@ const QUOTES = [
 const EMERG_FIELDS = [
   ['nome', 'Nome', 1], ['contacto', 'Contacto de emergência (nome e telefone)', 1], ['medico', 'Médico de família', 1],
   ['sangue', 'Grupo sanguíneo', 1], ['cond', 'Condições de saúde', 3], ['meds', 'Medicação habitual', 3],
-  ['alerg', 'Alergias e reações', 3], ['notas', 'Outras notas', 2]
+  ['alerg', 'Alergias e reações', 3], ['sens', 'Como me ajudar (sons, luz, toque, ritmo)', 3], ['notas', 'Outras notas', 2]
 ];
 
 /* ---------- Estado ---------- */
@@ -47,7 +49,7 @@ function ensureLog() {
 }
 function hardDay(l) {
   if (!l) return false;
-  return (l.pain != null && l.pain >= 6) || (l.painAM != null && l.painAM >= 6) || (l.energy != null && l.energy <= 3) ||
+  return (l.pain != null && l.pain >= 6) || (l.overload != null && l.overload >= 7) || (l.painAM != null && l.painAM >= 6) || (l.energy != null && l.energy <= 3) ||
     (l.sleepQ != null && l.sleepQ <= 3) || (l.sleep != null && l.sleep !== '' && l.sleep < 5) ||
     (l.sym || []).some((s) => HARD_SYMPTOMS.includes(s));
 }
@@ -83,6 +85,14 @@ WORKOUTS.push({
   ]
 });
 
+WORKOUTS.push({
+  id: 'resp', title: 'Respiração guiada', short: 'Inspira 4 segundos, expira 6, durante uns 3 minutos',
+  blocks: [{ section: 'Respirar', rounds: 18, work: 5, rest: 0, roundRest: 0, circuit: [
+    { name: 'Inspira', detail: 'pelo nariz, devagar', work: 4 },
+    { name: 'Expira', detail: 'pela boca, mais devagar', work: 6 }
+  ] }]
+});
+
 /* ---------- Cartões na página Hoje ---------- */
 function healthBanner() {
   const h = H(), l = h.logs[todayStr()];
@@ -94,10 +104,12 @@ function healthBanner() {
     o += `<div class="card"><div class="between"><div><strong>Bom dia. Como acordaste?</strong><div class="small">Registo da manhã, 30 segundos.</div></div><button class="btn small" data-a="goReg" data-v="manha">Registar</button></div></div>`;
   } else if (hr >= 19 && !pmDone) {
     o += `<div class="card"><div class="between"><div><strong>Como correu o dia?</strong><div class="small">Registo da noite, 1 minuto.</div></div><button class="btn small" data-a="goReg" data-v="noite">Registar</button></div></div>`;
+  } else if (l && l.overload != null && l.overload >= 7 && !(S.prefs && S.prefs.calm)) {
+    o += `<div class="card warn"><strong>Dia com muitos estímulos.</strong><div class="small">Menos ecrã, mais silêncio e ar livre. Queres o modo calmo?</div><div class="mt"><button class="btn small" data-a="calm">Ligar modo calmo</button></div></div>`;
   } else if (hardDay(l) && !h.recovery) {
     o += `<div class="card warn"><strong>Hoje o corpo pede maré baixa.</strong><div class="small">Caminhada leve e mobilidade chegam. Queres só os treinos suaves?</div><div class="mt"><button class="btn small" data-a="recovery" data-v="1">Ligar modo recuperação</button></div></div>`;
   }
-  o += physioBanner() + cycleBanner();
+  o += restCard() + physioBanner() + cycleBanner();
   h.meds.forEach((m) => {
     if (!isDate(m.end)) return;
     const d = daysUntil(m.end);
@@ -137,9 +149,19 @@ function summaryText(days = 30) {
   const lines = [`Últimos ${days} dias, ${logs.length} dias com registo.`,
     `Dor (0 a 10): média ${avg(pain)}, ${pain.filter((v) => v >= 6).length} dia(s) com 6 ou mais.`,
     `Energia média ${avg(nums('energy'))}/10. Humor médio ${avg(nums('mood'))}/10. Sono médio ${avg(nums('sleep'))} h.`,
+    `Sobrecarga sensorial média ${avg(nums('overload'))}/10.`,
     `Inalador usado ${nums('inhaler').reduce((a, b) => a + b, 0)} vez(es) no total.`];
   SYMPTOMS.forEach((s) => { const n = cnt(s); if (n) lines.push(`${s}: ${n} dia(s).`); });
   return lines.join('\n');
+}
+
+function restCard() {
+  const l = H().logs[todayStr()] || {}, calm = S.prefs && S.prefs.calm, high = l.overload != null && l.overload >= 6;
+  if (!calm && !high) return '';
+  const r = l.rest || {};
+  return `<div class="card good"><h2>Recuperar</h2><div class="small">Pequenas coisas que te fazem bem. Toca nas que fizeres.</div>
+    <div class="row mt">${RESTS.map(([k, lb]) => pill(lb, r[k], 'rest', `data-v="${k}"`)).join('')}</div>
+    <div class="mt"><button class="btn mint" data-a="openTimer" data-id="resp">Respiração guiada · 3 min</button></div></div>`;
 }
 
 /* ---------- Ecrã Saúde ---------- */
@@ -156,7 +178,9 @@ VIEWS.saude = function () {
     <input type="number" inputmode="decimal" step="0.5" min="0" max="16" placeholder="ex: 7" value="${l.sleep == null ? '' : l.sleep}" data-c="hlog" data-k="sleep">
     ${sl('sleepQ', 'Como dormiste')}${sl('painAM', 'Dor ou formigueiro ao levantar')}${sl('energy', 'Energia')}</div>`;
   const night = `<div class="card" id="c-noite"><h2>🌙 À noite</h2><div class="small">Por volta das 22h30, antes de dormir.</div>
-    ${sl('pain', 'Dor no pior momento do dia')}${sl('mood', 'Humor')}
+    ${sl('pain', 'Dor no pior momento do dia')}${sl('mood', 'Humor')}${sl('overload', 'Sobrecarga sensorial')}
+    <div class="lbl"><span>O que pesou hoje</span></div>
+    <div class="row">${LOADS.map((s) => pill(s, (l.load || []).includes(s), 'load', `data-v="${esc(s)}"`)).join('')}</div>
     <div class="lbl"><span>Sinais de hoje</span></div>
     <div class="row">${SYMPTOMS.map((s) => pill(s, (l.sym || []).includes(s), 'sym', `data-v="${esc(s)}"`)).join('')}</div>
     <div class="lbl"><span>Inalador (vezes hoje)</span></div>
@@ -168,6 +192,8 @@ VIEWS.saude = function () {
   R += `<div class="card ${h.recovery ? 'good' : ''}"><div class="between"><div><h2>Modo recuperação</h2><div class="small">Só caminhada e mobilidade suave. Os outros treinos ficam escondidos.</div></div>
     <button class="btn small ${h.recovery ? 'mint' : ''}" data-a="recovery" data-v="${h.recovery ? 0 : 1}">${h.recovery ? 'Ligado' : 'Ligar'}</button></div>
     <div class="row mt"><button class="pill${h.inhalerReminder ? ' on' : ''}" data-a="inhRem">Lembrar o inalador nos dias de treino</button></div></div>`;
+  R += `<div class="card ${(S.prefs && S.prefs.calm) ? 'good' : ''}"><div class="between"><div><h2>Modo calmo</h2><div class="small">Sem decoração nem animações, timer silencioso, só o essencial.</div></div>
+    <button class="btn small ${(S.prefs && S.prefs.calm) ? 'mint' : ''}" data-a="calm">${(S.prefs && S.prefs.calm) ? 'Ligado' : 'Ligar'}</button></div></div>`;
 
   M += `<div class="card"><h2>Medicação</h2>`;
   if (!h.meds.length) M += `<div class="small">Ainda sem medicação. Junta abaixo, com o fim da receita para te avisar a tempo.</div>`;
@@ -220,6 +246,9 @@ VIEWS.saude = function () {
 
 /* ---------- Ações ---------- */
 Object.assign(A, {
+  calm: () => { const on = !(S.prefs && S.prefs.calm); S.prefs = Object.assign({}, S.prefs, { calm: on }); if (on) S.prefs.sound = 'silencio'; save(); render(); toast(on ? 'Modo calmo ligado' : 'Modo calmo desligado'); },
+  load: (d) => { const l = ensureLog(); l.load = l.load || []; l.load = l.load.includes(d.v) ? l.load.filter((x) => x !== d.v) : [...l.load, d.v]; save(); render(); },
+  rest: (d) => { const l = ensureLog(); l.rest = l.rest || {}; l.rest[d.v] = !l.rest[d.v]; save(); render(); },
   goReg: (d) => { ui.tab = 'saude'; ui.sub = 'registo'; ui.focus = 'c-' + d.v; render(); },
   goSub: (d) => { ui.tab = 'saude'; ui.sub = d.v; window.scrollTo(0, 0); render(); },
   recovery: (d) => { H().recovery = d.v === '1'; ui.showAll = false; save(); render(); toast(d.v === '1' ? 'Modo recuperação ligado' : 'Modo recuperação desligado'); },

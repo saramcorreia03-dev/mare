@@ -216,7 +216,7 @@ const fmtTime = (sec) => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
 
 /* ---------- Estado e armazenamento ---------- */
 const KEY = 'mare:v1';
-const defaults = () => ({ weekplans: {}, mealplans: {}, checkins: {}, weights: [], notes: {} });
+const defaults = () => ({ weekplans: {}, mealplans: {}, checkins: {}, weights: [], notes: {}, prefs: {} });
 function load() {
   try { return Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || '{}')); }
   catch (e) { return defaults(); }
@@ -267,6 +267,7 @@ function render() {
   const t = TABS.find((x) => x.id === ui.tab);
   $('#title').textContent = t.title;
   $('#view').innerHTML = VIEWS[ui.tab]();
+  document.body.classList.toggle('calm', !!(S.prefs && S.prefs.calm));
   renderNav();
   const f = ui.focus && document.getElementById(ui.focus);
   if (f) { ui.focus = null; f.scrollIntoView(); } else window.scrollTo(0, y);
@@ -384,7 +385,7 @@ const VIEWS = {
     let h = `<div class="sub">Escolhe um treino e carrega em começar. O ecrã fica ligado enquanto o timer corre.</div>`;
     const rec = typeof recoveryOn === 'function' && recoveryOn() && !ui.showAll;
     if (rec) h += `<div class="card warn"><strong>Modo recuperação ligado.</strong><div class="small">Só aparece o treino suave. <button class="link" data-a="showAll">Ver todos os treinos</button></div></div>`;
-    WORKOUTS.filter((w) => !rec || w.id === 'recup').forEach((w) => {
+    WORKOUTS.filter((w) => !rec || w.id === 'recup' || w.id === 'resp').forEach((w) => {
       const mins = Math.round(buildSeq(w).reduce((a, s) => a + s.d, 0) / 60);
       h += `<div class="card"><div class="between"><div><div class="big" style="font-size:17px">${esc(w.title)}</div><div class="small">${esc(w.short)} · ~${mins} min</div></div><button class="btn small" data-a="openTimer" data-id="${w.id}">Começar</button></div></div>`;
     });
@@ -490,6 +491,7 @@ const A = {
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
   openTimer: (d) => openTimer(d.id),
+  tSound: () => { SOUND = SOUND === 'som' ? 'vibra' : SOUND === 'vibra' ? 'silencio' : 'som'; S.prefs = Object.assign({}, S.prefs, { sound: SOUND }); save(); if (SOUND === 'som') beep(520, 0.1); if (SOUND === 'vibra') buzz(60); drawTimer(); },
   tPlay: () => tToggle(), tNext: () => tNext(), tPrev: () => tPrev(), tRestart: () => tRestart(), tClose: () => tClose(),
   tMarkDone: () => {
     const t = ds(new Date()); const c = S.checkins[t] || {};
@@ -575,7 +577,9 @@ let T = null;       // estado do timer
 let audioCtx = null;
 let wakeLock = null;
 
+let SOUND = 'vibra'; // 'som' | 'vibra' | 'silencio'
 function beep(freq = 660, dur = 0.18) {
+  if (SOUND !== 'som') return;
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -586,13 +590,14 @@ function beep(freq = 660, dur = 0.18) {
     o.start(); o.stop(audioCtx.currentTime + dur);
   } catch (e) { /* sem som, não faz mal */ }
 }
-const buzz = (ms) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* ignora */ } };
+const buzz = (ms) => { if (SOUND === 'silencio') return; try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* ignora */ } };
 async function wake() { try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { /* ignora */ } }
 function unwake() { try { if (wakeLock) wakeLock.release(); } catch (e) { /* ignora */ } wakeLock = null; }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && T && T.running) wake(); });
 
 function openTimer(id) {
   const w = WORKOUTS.find((x) => x.id === id); if (!w) return;
+  SOUND = (S.prefs && S.prefs.sound) || ((S.prefs && S.prefs.calm) ? 'silencio' : 'vibra');
   const seq = buildSeq(w);
   T = { w, seq, idx: 0, left: seq[0].d, running: false, endAt: 0, iv: null, done: false };
   $('#timer').hidden = false; document.body.style.overflow = 'hidden';
@@ -665,7 +670,7 @@ function drawTimer() {
   if (!T) return;
   T.total = T.seq.reduce((a, s) => a + s.d, 0);
   const el = $('#timer');
-  const head = `<div class="ttop"><div><div class="label">Maré · ${esc(T.w.title)}</div></div><button class="btn ghost small" data-a="tClose">Fechar</button></div>`;
+  const head = `<div class="ttop"><div><div class="label">Maré · ${esc(T.w.title)}</div></div><div class="row nowrap"><button class="btn ghost small" data-a="tSound" aria-label="Som">${SOUND === 'som' ? '🔔 Som' : SOUND === 'vibra' ? '📳 Vibração' : '🔕 Silêncio'}</button><button class="btn ghost small" data-a="tClose">Fechar</button></div></div>`;
 
   if (T.done) {
     el.innerHTML = `<div class="tw">${head}<div class="tbar"><i style="width:100%"></i></div>
