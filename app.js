@@ -358,7 +358,7 @@ const VIEWS = {
       DAYS.map((d, i) => `<label class="dayrow"><span>${d}</span><select data-c="dayGroup" data-i="${i}">${
         Object.entries(GROUPS).map(([id, g]) => `<option value="${id}"${p.days[i] === id ? ' selected' : ''}>${g.label}</option>`).join('')
       }</select>${typeof agendaTag === 'function' ? agendaTag(i) : ''}</label>`).join('') + `</div></div>`;
-    if (typeof weekAgenda === 'function') h += weekAgenda();
+    if (typeof loadCard === 'function') h += loadCard() + weekAgenda();
 
     // Refeições por dia
     const filtered = MEALS.filter((m) => !ui.ing.length || m.base.some((b) => ui.ing.includes(b)));

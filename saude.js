@@ -157,6 +157,7 @@ function summaryText(days = 30) {
   const lines = [`Últimos ${days} dias, ${logs.length} dias com registo.`,
     `Dor (0 a 10): média ${avg(pain)}, ${pain.filter((v) => v >= 6).length} dia(s) com 6 ou mais.`,
     `Energia média ${avg(nums('energy'))}/10. Humor médio ${avg(nums('mood'))}/10. Sono médio ${avg(nums('sleep'))} h.`,
+    `Stress médio ${avg(nums('stress'))}/10.`,
     `Sobrecarga sensorial média ${avg(nums('overload'))}/10.`,
     `Inalador usado ${nums('inhaler').reduce((a, b) => a + b, 0)} vez(es) no total.`];
   SYMPTOMS.forEach((s) => { const n = cnt(s); if (n) lines.push(`${s}: ${n} dia(s).`); });
@@ -186,7 +187,7 @@ VIEWS.saude = function () {
     <input type="number" inputmode="decimal" step="0.5" min="0" max="16" placeholder="ex: 7" value="${l.sleep == null ? '' : l.sleep}" data-c="hlog" data-k="sleep">
     ${sl('sleepQ', 'Como dormiste')}${sl('painAM', 'Dor ou formigueiro ao levantar')}${sl('energy', 'Energia')}</div>`;
   const night = `<div class="card" id="c-noite"><h2>🌙 À noite</h2><div class="small">Por volta das 22h30, antes de dormir.</div>
-    ${sl('pain', 'Dor no pior momento do dia')}${sl('mood', 'Humor')}${sl('overload', 'Sobrecarga sensorial')}
+    ${sl('pain', 'Dor no pior momento do dia')}${sl('stress', 'Stress')}${sl('mood', 'Humor')}${sl('overload', 'Sobrecarga sensorial')}
     <div class="lbl"><span>O que pesou hoje</span></div>
     <div class="row">${LOADS.map((s) => pill(s, (l.load || []).includes(s), 'load', `data-v="${esc(s)}"`)).join('')}</div>
     <div class="lbl"><span>Sinais de hoje</span></div>
@@ -235,6 +236,7 @@ VIEWS.saude = function () {
       : `<textarea rows="${rows}" data-c="emerg" data-k="${k}">${esc(h.emerg[k] || '')}</textarea>`}`).join('')}
     <button class="btn small" data-a="printSheet">Imprimir ou guardar PDF</button></div></div>`;
 
+  M += weightsCard() + loadInsightsCard();
   M += `<div class="card"><h2>Importar agenda</h2><div class="small">Aulas, fisioterapia, consultas e prazos, a partir de um ficheiro. Ficam só neste aparelho. Dá para repetir sempre que a agenda mudar.</div>
     <div class="row mt"><label class="btn ghost small" style="cursor:pointer;display:inline-block">Escolher ficheiro<input type="file" accept="application/json" data-c="impAgenda" hidden></label></div></div>`;
 
@@ -320,7 +322,9 @@ Object.assign(C, {
           if (!isDate(date) || !e) return;
           const l = h.logs[date] || { sym: [], meds: {} };
           if (!l.sym) l.sym = []; if (!l.meds) l.meds = {};
-          if (e.arm != null || e.neck != null) l.pain = Math.max(+e.arm || 0, +e.neck || 0);
+          if (e.arm != null || e.neck != null) l.pain = Math.max(+e.arm || 0, +e.neck || 0) * 2;
+          if (e.stress != null && e.stress !== '') l.stress = +e.stress * 2;
+          if (e.overload != null && e.overload !== '') l.overload = +e.overload * 2;
           if (e.sleep != null && e.sleep !== '') l.sleep = +e.sleep;
           if (+e.migInt > 0 && !l.sym.includes('Enxaqueca')) l.sym.push('Enxaqueca');
           if (+e.cramp > 0 && !l.sym.includes('Cólicas')) l.sym.push('Cólicas');

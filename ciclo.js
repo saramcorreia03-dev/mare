@@ -45,7 +45,7 @@ const CYCLE_FLAGS = [
   'Sangramento entre menstruações ou depois de relações.',
   'Mudanças bruscas no teu padrão habitual.'
 ];
-const METRICS = [['energy', 'Energia'], ['mood', 'Humor'], ['pain', 'Dor'], ['sleepQ', 'Sono'], ['overload', 'Sobrecarga']];
+const METRICS = [['energy', 'Energia'], ['mood', 'Humor'], ['pain', 'Dor'], ['sleepQ', 'Sono'], ['overload', 'Sobrecarga'], ['stress', 'Stress']];
 
 const dDiff = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
 const addD = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return ds(d); };
@@ -95,7 +95,7 @@ function cyclePatterns() {
   METRICS.forEach(([k, label]) => {
     const rows = Object.keys(by).map((ph) => ({ ph, n: by[ph].ns[k] || 0, v: avg(by[ph], k) })).filter((r) => r.n >= 3);
     if (rows.length < 2) return;
-    const better = (k === 'pain' || k === 'overload') ? -1 : 1;
+    const better = (k === 'pain' || k === 'overload' || k === 'stress') ? -1 : 1;
     const sorted = [...rows].sort((a, b) => (a.v - b.v) * better);
     const worst = sorted[0], others = rows.filter((r) => r !== worst);
     const oAvg = others.reduce((a, r) => a + r.v, 0) / others.length;
