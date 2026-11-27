@@ -12,7 +12,7 @@ const greet = () => { const h = new Date().getHours(); return h < 5 ? 'Boa noite
 const SCALES = [
   { k: 'sleepQ', t: 'Como dormi', w: ['Mal', 'Fraco', 'Assim-assim', 'Bem', 'Muito bem'], v: [1, 3, 5, 7, 9], good: true },
   { k: 'energy', t: 'Energia', w: ['Nenhuma', 'Pouca', 'Média', 'Boa', 'Muita'], v: [1, 3, 5, 7, 9], good: true },
-  { k: 'mood', t: 'Humor', w: ['Em baixo', 'Em baixo, mas aguento', 'Assim-assim', 'Bem', 'Ótimo'], v: [1, 3, 5, 7, 9], good: true },
+  { k: 'mood', t: 'Humor', w: ['Muito em baixo', 'Em baixo', 'Assim-assim', 'Bem', 'Ótimo'], v: [1, 3, 5, 7, 9], good: true },
   { k: 'pain', t: 'Dor', w: ['Nada', 'Pouca', 'Média', 'Muita', 'Imensa'], v: [0, 2, 5, 7, 9] },
   { k: 'mig', t: 'Enxaqueca', w: ['Nada', 'Leve', 'Média', 'Forte', 'Imensa'], v: [0, 1, 2, 3, 4] },
   { k: 'overload', t: 'Sobrecarga sensorial', w: ['Nada', 'Pouca', 'Média', 'Muita', 'Imensa'], v: [0, 2, 5, 7, 9] },

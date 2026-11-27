@@ -186,9 +186,9 @@ main { gap: 16px; }
 .yn .opts { display: flex; gap: 6px; flex: none; }
 .yn .pill { min-width: 54px; min-height: 40px; text-align: center; font-size: 14px; }
 
-.sc { margin: 14px 0; }
+.sc { margin: 11px 0; }
 .dots { display: flex; gap: 8px; margin-top: 8px; }
-.d5 { flex: 1; height: 46px; border-radius: 12px; border: 1px solid var(--line); background: linear-gradient(to top, rgba(143, 174, 139, .55) calc(var(--f) * 18%), rgba(255, 255, 255, .6) 0); }
+.d5 { flex: 1; height: 36px; border-radius: 12px; border: 1px solid var(--line); background: linear-gradient(to top, rgba(143, 174, 139, .55) calc(var(--f) * 18%), rgba(255, 255, 255, .6) 0); }
 .d5.on { border: 2px solid var(--accent-ink); background: linear-gradient(to top, var(--accent) calc(var(--f) * 18%), rgba(255, 255, 255, .85) 0); }
 .prog { height: 6px; border-radius: 99px; background: var(--line); margin-top: 8px; overflow: hidden; }
 .prog i { display: block; height: 100%; background: var(--accent-ink); border-radius: 99px; }
