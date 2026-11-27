@@ -10,7 +10,7 @@ TABS.forEach((t) => { if (t.id === 'progresso') { t.label = 'Histórico'; t.titl
 
 const HM = [
   ['energy', 'Energia', 10, 'var(--sage-ink)'], ['mood', 'Humor', 10, 'var(--accent-ink)'], ['pain', 'Dor', 10, 'var(--terra-ink)'],
-  ['stress', 'Stress', 10, 'var(--terra-ink)'], ['overload', 'Sobrecarga sensorial', 10, '#7A5C9E'], ['sleep', 'Sono (horas)', 10, '#3F6E8C']
+  ['stress', 'Stress', 10, 'var(--terra-ink)'], ['overload', 'Sobrecarga sensorial', 10, '#6A5F7A'], ['sleep', 'Sono (horas)', 10, '#5F7F6A']
 ];
 const PH_COLOR = { mens: 'var(--terra)', fol: 'var(--sage)', ovu: 'var(--accent)', lut: '#C9A8D6' };
 const nz = (v) => (v == null || v === '' || isNaN(v) ? null : Number(v));
