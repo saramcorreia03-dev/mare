@@ -157,3 +157,8 @@ html:has(body.calm) { background: linear-gradient(180deg, #F7EEDD, #F1E3CB); }
 body.calm * { transition: none !important; animation: none !important; }
 body.calm #timer { background: linear-gradient(180deg, #F7EEDD, #F1E3CB); }
 body.calm .card { box-shadow: none; }
+
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+.tile .big { font-size: 26px; }
+.acc summary span { margin-top: 2px; }
