@@ -374,6 +374,8 @@ Object.assign(C, {
           const old = x.was && h.meds.find((m) => m.name === x.was);
           if (old) { old.name = String(x.name); old.dose = String(x.dose || old.dose || ''); return; }
           if (!h.meds.some((m) => m.name === x.name)) h.meds.push({ id: newId(), name: String(x.name), dose: String(x.dose || ''), end: isDate(x.end) ? x.end : '' });
+          // se já existem o nome novo e o antigo, tira o antigo
+          if (x.was && h.meds.some((m) => m.name === x.name)) h.meds = h.meds.filter((m) => m.name !== x.was);
         });
         const fi = data.ficha || {}, map = { nome: 'f_nome', cond: 'f_cond', alerg: 'f_alerg', meds: 'f_med', medico: 'f_mf', sangue: 'f_sangue', notas: 'f_notas' };
         Object.entries(map).forEach(([k, src]) => { if (fi[src] && !h.emerg[k]) h.emerg[k] = String(fi[src]); });
