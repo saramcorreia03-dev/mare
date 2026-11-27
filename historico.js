@@ -35,7 +35,7 @@ function hChart(dates, key, label, max, color) {
 
 function dayHasData(d) {
   const l = H().logs[d], c = S.checkins[d];
-  const hasLog = l && (['pain', 'painAM', 'energy', 'mood', 'stress', 'overload', 'sleep', 'sleepQ'].some((k) => nz(l[k]) != null) || (l.sym || []).length || l.notes || l.inhaler || l.flow || l.place);
+  const hasLog = l && (['pain', 'painAM', 'energy', 'mood', 'stress', 'overload', 'sleep', 'sleepQ'].some((k) => nz(l[k]) != null) || (l.sym || []).length || l.notes || l.inhaler || l.flow || l.place || l.pill);
   return !!(hasLog || (c && (c.done || c.photo)) || agendaFor(d).length);
 }
 
@@ -47,7 +47,7 @@ function dayDetail(d) {
   const phy = Object.keys(l.physio || {}).filter((k) => l.physio[k]).length;
   const dl = evs.length ? dayLoad(d) : null;
   return `<div class="stack" style="margin-top:8px">
-    ${row('Onde', l.place ? esc(l.place) : '')}
+    ${row('Onde', l.place ? esc(l.place) : '')}${row('Pílula', l.pill ? 'tomada ✓' : '')}
     ${row('Sono', nn('sleep') ? nn('sleep') + ' h' + (nn('sleepQ') ? ` · qualidade ${nn('sleepQ')}` : '') : (nn('sleepQ') ? 'qualidade ' + nn('sleepQ') : ''))}
     ${row('Ao levantar', nn('painAM') ? 'dor ' + nn('painAM') : '')}${row('Energia', nn('energy'))}${row('Humor', nn('mood'))}${row('Dor', nn('pain'))}${row('Stress', nn('stress'))}${row('Sobrecarga', nn('overload'))}
     ${row('Sinais', (l.sym || []).map(esc).join(', '))}${row('Pesou', (l.load || []).map(esc).join(', '))}${row('Inalador', l.inhaler ? l.inhaler + ' vez(es)' : '')}${row('Recuperar', rests)}

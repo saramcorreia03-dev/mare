@@ -113,15 +113,32 @@ function cyclePatterns() {
 }
 
 /* ---------- Ecrã ---------- */
+const PILL_REGIMES = [['21/7', '21 dias + 7 de pausa'], ['24/4', '24 dias + 4 de pausa'], ['continua', 'Contínua (sem pausa)'], ['outro', 'Outro']];
+const pillOn = () => !!cyc().pill && !!cyc().pill.on;
+function pillCard() {
+  const cy = cyc(), p = cy.pill || {}, l = H().logs[logDate()] || {};
+  let o = `<div class="card"><h2>Pílula e SOP</h2><div class="small">Isto muda a forma de ler o ciclo, por isso é bom anotar.</div>
+    <div class="row mt">${pill('Tomo a pílula', !!p.on, 'pillOn', 'data-v="1"')}${pill('Tenho SOP', !!cy.sop, 'sopOn', 'data-v="1"')}</div>`;
+  if (p.on) {
+    o += `<div class="stack mt"><input type="text" id="pill-name" placeholder="Nome da pílula (opcional)" value="${esc(p.name || '')}" data-c="pillName">
+      <div class="row">${PILL_REGIMES.map(([id, lb]) => pill(lb, p.regime === id, 'pillRegime', `data-v="${id}"`)).join('')}</div>
+      <label class="small">Hora habitual</label><input type="time" id="pill-time" value="${esc(p.time || '22:00')}" data-c="pillTime">
+      <button class="btn ${l.pill ? 'mint' : ''}" data-a="pillTaken">${l.pill ? '✓ Pílula de hoje tomada' : 'Tomei a pílula hoje'}</button></div>
+      <div class="small mt">Com a pílula, a menstruação costuma ser uma hemorragia de privação, não um ciclo natural. As fases (ovulação, fase lútea) e as previsões abaixo são só estimativas e podem não corresponder ao que o teu corpo faz.</div>`;
+  }
+  if (cy.sop) o += `<div class="small mt">Com SOP, os ciclos podem ser longos ou irregulares, e isso é comum. A app aceita ciclos de 15 a 60 dias, mas as previsões ficam menos fiáveis. Se passarem muitos meses sem menstruação, fala com a médica.</div>`;
+  return o + `</div>`;
+}
+
 function cicloView() {
   const h = H(), st = cycleStats(), today = todayStr(), l = h.logs[today] || {};
   const cur = phaseOf(today, st), nxt = nextPeriod(st);
-  let o = '';
+  let o = pillCard();
 
   o += `<div class="card ${cur ? 'good' : ''}"><div class="label">Hoje</div>`;
   if (cur) {
     const P = PHASES[cur.ph];
-    o += `<div class="big">${P.icon} Dia ${cur.day} · fase ${P.name.toLowerCase()}</div><div class="small mt">${P.mare}</div>`;
+    o += `<div class="big">${P.icon} Dia ${cur.day} · fase ${P.name.toLowerCase()}${pillOn() ? ' (estimativa)' : ''}</div><div class="small mt">${P.mare}</div>`;
     if (nxt) o += `<div class="small mt">Próxima menstruação por volta de <b>${fmtShort(nxt.date)}</b>${nxt.spread != null ? ` (entre ${fmtShort(nxt.lo)} e ${fmtShort(nxt.hi)})` : ' (estimativa, ainda com poucos ciclos)'}.${daysUntil(nxt.date) < -2 ? ' A previsão já passou. Os ciclos variam, mas se passarem meses sem menstruar fala com a médica.' : ''}</div>`;
   } else {
     o += `<div class="big">Ainda sem ciclo registado</div><div class="small mt">Marca o primeiro dia da tua última menstruação e a app começa a acompanhar.</div>`;
@@ -194,3 +211,12 @@ function cycleBanner() {
   if (!txt) return '';
   return `<div class="card note"><strong>${P.icon} Dia ${cur.day} do ciclo · ${P.name.toLowerCase()}</strong><div class="small">${txt} <button class="link" data-a="goSub" data-v="ciclo">Saber mais</button></div></div>`;
 }
+
+Object.assign(A, {
+  pillOn: () => { const cy = cyc(); cy.pill = Object.assign({ on: false, regime: '21/7', time: '22:00', name: '' }, cy.pill || {}); cy.pill.on = !cy.pill.on; save(); render(); },
+  sopOn: () => { const cy = cyc(); cy.sop = !cy.sop; save(); render(); },
+  pillRegime: (d) => { cyc().pill.regime = d.v; save(); render(); },
+  pillTaken: () => { const l = ensureLog(); l.pill = !l.pill; save(); render(); }
+});
+C.pillName = (el) => { cyc().pill.name = el.value; save(); };
+C.pillTime = (el) => { cyc().pill.time = el.value; save(); };

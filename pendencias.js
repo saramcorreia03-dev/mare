@@ -63,6 +63,10 @@ function pendencias() {
     const at = S.prefs && S.prefs.agendaAt;
     if (!at || dDiff(at, t) > 14) add('agenda', 'Atualizar a agenda', at ? `última vez há ${dDiff(at, t)} dias` : 'importa de novo quando mudar', 'ok', 'goSub', 'mais');
   }
+  if (pillOn()) {
+    const pt = (cyc().pill.time || '22:00').split(':').map(Number), now = new Date().getHours() * 60 + new Date().getMinutes();
+    if (!l.pill && t === todayStr() && now >= pt[0] * 60 + pt[1] - 30) add('pill', 'Pílula de hoje', `hora habitual ${cyc().pill.time || '22:00'}`, now >= pt[0] * 60 + pt[1] + 120 ? 'late' : 'soon', 'goSub', 'ciclo');
+  }
   const rank = { late: 0, soon: 1, ok: 2 };
   return out.sort((a, b) => rank[a.level] - rank[b.level]);
 }
