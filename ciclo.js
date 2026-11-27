@@ -115,6 +115,13 @@ function cyclePatterns() {
 /* ---------- Ecrã ---------- */
 const PILL_REGIMES = [['21/7', '21 dias + 7 de pausa'], ['24/4', '24 dias + 4 de pausa'], ['continua', 'Contínua (sem pausa)'], ['outro', 'Outro']];
 const pillOn = () => !!cyc().pill && !!cyc().pill.on;
+const PACK = { '21/7': [21, 28, false], '24/4': [24, 28, true], 'continua': [28, 28, true], 'outro': [28, 28, true] }; // [ativos, total, toma-se na pausa?]
+function packInfo(date) {
+  const p = cyc().pill; if (!p || !p.on || !isDate(p.packStart)) return null;
+  const [act, tot, takes] = PACK[p.regime] || PACK['24/4'];
+  const n = ((dDiff(p.packStart, date) % tot) + tot) % tot + 1;
+  return { n, act, tot, pause: n > act, takes };
+}
 function pillCard() {
   const cy = cyc(), p = cy.pill || {}, l = H().logs[logDate()] || {};
   let o = `<div class="card"><h2>Pílula e SOP</h2><div class="small">Isto muda a forma de ler o ciclo, por isso é bom anotar.</div>
@@ -122,6 +129,9 @@ function pillCard() {
   if (p.on) {
     o += `<div class="stack mt"><input type="text" id="pill-name" placeholder="Nome da pílula (opcional)" value="${esc(p.name || '')}" data-c="pillName">
       <div class="row">${PILL_REGIMES.map(([id, lb]) => pill(lb, p.regime === id, 'pillRegime', `data-v="${id}"`)).join('')}</div>
+      <div class="small">${(() => { const pi = packInfo(todayStr()); return pi ? `<b>Hoje: dia ${pi.n} de ${pi.tot}</b> ${pi.pause ? '(pausa' + (pi.takes ? ', comprimido inativo' : ', sem comprimido') + '; é normal vir a menstruação)' : '(comprimido ativo)'}` : 'Ainda não disseste em que dia do blister estás.'; })()}</div>
+      <label class="small">Em que dia do blister estás hoje? (1 a 28)</label>
+      <div class="row nowrap"><input type="number" min="1" max="28" id="pill-day" placeholder="ex: 12"><button class="btn small" data-a="pillDay">Guardar</button></div>
       <label class="small">Hora habitual</label><input type="time" id="pill-time" value="${esc(p.time || '22:00')}" data-c="pillTime">
       <button class="btn ${l.pill ? 'mint' : ''}" data-a="pillTaken">${l.pill ? '✓ Pílula de hoje tomada' : 'Tomei a pílula hoje'}</button></div>
       <div class="small mt">Com a pílula, a menstruação costuma ser uma hemorragia de privação, não um ciclo natural. As fases (ovulação, fase lútea) e as previsões abaixo são só estimativas e podem não corresponder ao que o teu corpo faz.</div>`;
@@ -214,6 +224,7 @@ function cycleBanner() {
 
 Object.assign(A, {
   pillOn: () => { const cy = cyc(); cy.pill = Object.assign({ on: false, regime: '21/7', time: '22:00', name: '' }, cy.pill || {}); cy.pill.on = !cy.pill.on; save(); render(); },
+  pillDay: () => { const v = Math.round(+$('#pill-day').value); if (!(v >= 1 && v <= 28)) { toast('Escreve um número de 1 a 28'); return; } cyc().pill.packStart = addD(todayStr(), -(v - 1)); save(); render(); toast('Guardado'); },
   sopOn: () => { const cy = cyc(); cy.sop = !cy.sop; save(); render(); },
   pillRegime: (d) => { cyc().pill.regime = d.v; save(); render(); },
   pillTaken: () => { const l = ensureLog(); l.pill = !l.pill; save(); render(); }

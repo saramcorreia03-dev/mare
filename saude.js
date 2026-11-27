@@ -377,6 +377,7 @@ Object.assign(C, {
           // se já existem o nome novo e o antigo, tira o antigo
           if (x.was && h.meds.some((m) => m.name === x.name)) h.meds = h.meds.filter((m) => m.name !== x.was);
         });
+        if (data.cycle && typeof data.cycle === 'object') { const cy = cyc(); if (data.cycle.sop != null) cy.sop = !!data.cycle.sop; if (data.cycle.pill) cy.pill = Object.assign({}, cy.pill || {}, data.cycle.pill, { on: true }); }
         const fi = data.ficha || {}, map = { nome: 'f_nome', cond: 'f_cond', alerg: 'f_alerg', meds: 'f_med', medico: 'f_mf', sangue: 'f_sangue', notas: 'f_notas' };
         Object.entries(map).forEach(([k, src]) => { if (fi[src] && !h.emerg[k]) h.emerg[k] = String(fi[src]); });
         const contact = [fi.f_cont, fi.f_tel].filter(Boolean).join(' · ');
