@@ -119,37 +119,6 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('#pop [data-a]')) setTimeout(() => { const el = $('#pop'); if (el) el.hidden = true; }, 0);
 });
 
-/* Registo do dia: lista curta de sim ou não */
-const YN = [
-  { k: 'sleepQ', t: 'Dormi bem?', yes: 8, no: 3 },
-  { k: 'energy', t: 'Tive energia?', yes: 7, no: 3 },
-  { k: 'mood', t: 'Estive bem de humor?', yes: 7, no: 3 },
-  { k: 'pain', t: 'Tive dor?', yes: 6, no: 1 },
-  { k: 'mig', t: 'Tive enxaqueca?' },
-  { k: 'overload', t: 'Senti-me sobrecarregada (barulho, luz, gente)?', yes: 7, no: 2 },
-  { k: 'stress', t: 'Estive stressada ou ansiosa?', yes: 7, no: 2 }
-];
-function ynState(l, q) {
-  if (q.k === 'mig') return (l.sym || []).includes('Enxaqueca') ? 1 : (l.migNo ? 0 : -1);
-  const v = nz(l[q.k]); return v == null ? -1 : (v >= 5 ? 1 : 0);
-}
-function quickCard() {
-  const l = H().logs[logDate()] || {};
-  const hh = H(), places = hh.places && hh.places.length ? hh.places : ['Porto', 'Braga', 'Terceira'];
-  const row = (q) => { const s = ynState(l, q); return `<div class="yn"><span class="q">${q.t}</span><span class="opts">
-    <button class="pill${s === 1 ? ' on' : ''}" data-a="yn" data-k="${q.k}" data-v="1">Sim</button><button class="pill${s === 0 ? ' on' : ''}" data-a="yn" data-k="${q.k}" data-v="0">Não</button></span></div>`; };
-  const placeRow = `<div class="mt"><div class="small">Onde estás?</div><div class="row mt">${places.map((pl) =>
-    `<button class="pill${l.place === pl ? ' on' : ''}" data-a="place" data-v="${esc(pl)}">${esc(pl)}</button>`).join('')}</div>
-    <details class="mt"><summary class="small">Outro sítio</summary><div class="row nowrap mt"><input type="text" id="pl-new" placeholder="Nome do sítio"><button class="btn ghost small" data-a="addPlace">Juntar</button></div></details></div>`;
-  return `<div class="card"><h2>Como foi hoje?</h2><div class="small">Sim ou não, sem pensar muito. O resto é opcional.</div><div class="mt">${YN.map(row).join('')}</div>${placeRow}
-    <div class="mt"><button class="link small" data-a="goReg" data-v="manha">Acrescentar mais detalhes</button></div></div>`;
-}
-A.yn = (d) => {
-  const q = YN.find((x) => x.k === d.k); if (!q) return; const l = ensureLog(), yes = d.v === '1';
-  if (q.k === 'mig') { l.sym = (l.sym || []).filter((s) => s !== 'Enxaqueca'); if (yes) { l.sym.push('Enxaqueca'); l.migNo = false; } else l.migNo = true; }
-  else l[q.k] = yes ? q.yes : q.no;
-  save(); render();
-};
 A.place = (d) => { const l = ensureLog(); l.place = l.place === d.v ? '' : d.v; save(); render(); };
 A.addPlace = () => { const v = ($('#pl-new').value || '').trim(); if (!v) return; const h = H(); h.places = (h.places && h.places.length ? h.places : ['Porto', 'Braga', 'Terceira']).slice(); if (!h.places.includes(v)) h.places.push(v); ensureLog().place = v; save(); render(); };
 
@@ -191,3 +160,5 @@ function reportCard(force) {
   return `<div class="card note"><h2>A tua semana em poucas frases</h2><div class="stack mt">${weeklyFacts().map((x) => `<div>• ${esc(x)}</div>`).join('')}</div>
     <div class="small mt">Padrões, não diagnósticos. Se algo te preocupar, fala com a médica.</div></div>`;
 }
+
+function reportInsight() { try { return weeklyFacts().filter((t) => !/^(Registaste|Esta semana não)/.test(t))[0] || ''; } catch (e) { return ''; } }

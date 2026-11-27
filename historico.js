@@ -100,6 +100,7 @@ VIEWS.progresso = function () {
   const heavy = dates.filter((d) => agendaFor(d).length && dayLoad(d).level === 'pesada').length;
   const migr = dates.filter((d) => ((logs[d] || {}).sym || []).includes('Enxaqueca')).length;
   o += reportCard(true);
+  o += heatCard(dates);
   const tiles = [[withLog.length, 'dias com registo'], [trained, 'treinos feitos'], [avg(vals('sleep')) + (vals('sleep').length ? ' h' : ''), 'sono médio'], [avg(vals('energy')), 'energia média'],
     [avg(vals('stress')), 'stress médio'], [heavy, 'dias pesados'], [migr, 'dias com enxaqueca'], [agendaAll().length ? dates.filter((d) => agendaFor(d).length).length : '—', 'dias com compromissos']];
   o += `<div class="tiles">${tiles.map(([v, l]) => `<div class="tile"><div class="big">${v}</div><div class="small">${l}</div></div>`).join('')}</div>`;
@@ -117,7 +118,7 @@ VIEWS.progresso = function () {
   }
 
   const charts = HM.map(([k, lb, mx, col]) => hChart(dates, k, lb, mx, col)).join('');
-  o += charts || `<div class="card"><div class="small">Sem registos de energia, humor, dor ou sono nestes ${n} dias. Faz o registo da manhã e da noite, ou traz o histórico em Saúde → Mais.</div></div>`;
+  o += charts ? `<details class="card acc"><summary>Gráficos de linha</summary>${charts}</details>` : `<div class="card"><div class="small">Sem registos de energia, humor, dor ou sono nestes ${n} dias. Faz o registo da manhã e da noite, ou traz o histórico em Saúde → Mais.</div></div>`;
 
   const ex = [...H().exams].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 4);
   if (ex.length) o += `<div class="card"><strong>Últimos exames</strong><div class="stack mt">${ex.map((e) => `<div class="between"><span>${esc(e.title)}</span><span class="small">${fmtShort(e.date)}</span></div>`).join('')}</div><div class="mt"><button class="link small" data-a="goSub" data-v="mais">Ver tudo</button></div></div>`;
@@ -128,3 +129,20 @@ Object.assign(A, {
   hsub: (d) => { ui.hsub = d.v; window.scrollTo(0, 0); render(); },
   hrange: (d) => { ui.hrange = +d.v; render(); }
 });
+
+/* Mapa de cores: uma linha por medida, uma coluna por dia */
+function heatCard(dates) {
+  const logs = H().logs, n = dates.length;
+  const rows = [['energy', 'Energia', true], ['mood', 'Humor', true], ['sleepQ', 'Sono', true], ['pain', 'Dor', false], ['overload', 'Sobrecarga', false], ['stress', 'Stress', false]];
+  const cell = (d, k, good) => {
+    const v = nz((logs[d] || {})[k]); if (v == null) return `<i title="${fmtShort(d)}"></i>`;
+    const a = (0.18 + 0.72 * Math.min(10, Math.max(0, v)) / 10).toFixed(2), col = good ? '63,94,69' : '181,117,95';
+    return `<i title="${fmtShort(d)} · ${num1(v)}" style="background:rgba(${col},${a})"></i>`;
+  };
+  let o = `<div class="card"><h2>O mês num olhar</h2><div class="small">Mais escuro = mais. Energia, humor e sono em verde; dor, sobrecarga e stress em argila.</div><div class="hm">`;
+  if (typeof pillOn === 'function' && pillOn()) o += `<span class="lb">Pausa</span><div class="rw">${dates.map((d) => `<i class="${(packInfo(d) || {}).pause ? 'pz' : ''}" title="${fmtShort(d)}"></i>`).join('')}</div>`;
+  if (agendaAll().length) o += `<span class="lb">Dia pesado</span><div class="rw">${dates.map((d) => `<i class="${agendaFor(d).length && dayLoad(d).level === 'pesada' ? 'hv' : ''}" title="${fmtShort(d)}" style="${agendaFor(d).length && dayLoad(d).level === 'pesada' ? '' : 'background:none'}"></i>`).join('')}</div>`;
+  rows.forEach(([k, lb, good]) => { o += `<span class="lb">${lb}</span><div class="rw">${dates.map((d) => cell(d, k, good)).join('')}</div>`; });
+  o += `</div><div class="between small mt"><span>${fmtShort(dates[0])}</span><span>${fmtShort(dates[n - 1])}</span></div></div>`;
+  return o;
+}
