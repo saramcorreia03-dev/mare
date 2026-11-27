@@ -112,3 +112,21 @@ Object.assign(A, {
 document.addEventListener('click', (e) => {
   if (e.target.closest('#pop [data-a]')) setTimeout(() => { const el = $('#pop'); if (el) el.hidden = true; }, 0);
 });
+
+/* Registo com um toque: carinhas de 1 a 5 */
+const QUICK = [
+  { k: 'energy', t: 'Energia', f: ['😴', '😕', '😐', '🙂', '⚡'], v: [1, 3, 5, 7, 9] },
+  { k: 'mood', t: 'Humor', f: ['😢', '😕', '😐', '🙂', '😄'], v: [1, 3, 5, 7, 9] },
+  { k: 'pain', t: 'Dor', f: ['😌', '🙂', '😕', '😣', '😭'], v: [0, 2, 4, 7, 9] }
+];
+function quickCard() {
+  const l = H().logs[logDate()] || {};
+  const row = (q) => {
+    const cur = l[q.k], sel = cur == null ? -1 : q.v.reduce((b, x, i) => (Math.abs(x - cur) < Math.abs(q.v[b] - cur) ? i : b), 0);
+    return `<div class="between"><span class="small" style="min-width:60px">${q.t}</span><div class="row nowrap" style="gap:6px">${q.f.map((e, i) =>
+      `<button class="pill${sel === i ? ' on' : ''}" style="font-size:20px;padding:6px 8px" data-a="quick" data-k="${q.k}" data-i="${i}" aria-label="${q.t} ${i + 1} de 5">${e}</button>`).join('')}</div></div>`;
+  };
+  return `<div class="card"><h2>Como estás?</h2><div class="small">Um toque em cada. O resto é opcional.</div><div class="stack mt">${QUICK.map(row).join('')}</div>
+    <div class="mt"><button class="link small" data-a="goReg" data-v="manha">Mais detalhes (sono, sintomas, nota)</button></div></div>`;
+}
+A.quick = (d) => { const q = QUICK.find((x) => x.k === d.k); if (!q) return; const l = ensureLog(); l[d.k] = q.v[+d.i]; save(); render(); };

@@ -253,7 +253,6 @@ const TABS = [
   { id: 'hoje', label: 'Hoje', title: 'Hoje' },
   { id: 'semana', label: 'Semana', title: 'A tua semana' },
   { id: 'treinos', label: 'Treinos', title: 'Treinos com timer' },
-  { id: 'comida', label: 'Comida', title: 'Base de refeições' },
   { id: 'progresso', label: 'Progresso', title: 'Progresso' }
 ];
 
@@ -296,11 +295,11 @@ const VIEWS = {
     const g = gid ? GROUPS[gid] : null;
     const ci = S.checkins[today] || {};
     let h = `<div class="quote">${esc(typeof dailyQuote === 'function' ? dailyQuote() : '')}</div><div class="sub" style="text-align:center">${DAYS_LONG[idx]}, ${fmtShort(today)}</div>`;
-    if (typeof nextStepCard === 'function') h += nextStepCard() + pendCard() + agendaCard();
+    if (typeof nextStepCard === 'function') h += quickCard() + pendCard() + nextStepCard() + agendaCard();
     if (typeof healthBanner === 'function') h += healthBanner();
 
     if (idx === 6) {
-      h += `<div class="card note"><strong>Domingo é dia de maré.</strong><div class="small">Escolhe a maré, o treino e as refeições da próxima semana. <button class="link" data-a="goNext">Abrir plano</button></div></div>`;
+      h += `<div class="card note"><strong>Domingo é dia de maré.</strong><div class="small">Escolhe a maré e os treinos da próxima semana. <button class="link" data-a="goNext">Abrir plano</button></div></div>`;
     }
 
     if (typeof recoveryOn === 'function' && recoveryOn()) {
@@ -328,19 +327,6 @@ const VIEWS = {
       }
     }
 
-    // Refeições do dia
-    const mp = S.mealplans[weekStart(0)];
-    const day = mp && mp.days[idx];
-    const items = day ? SLOTS.map((s) => ({ s, m: day[s.k] ? mealById(day[s.k]) : null })).filter((x) => x.m) : [];
-    h += `<div class="card"><h2>Refeições de hoje</h2>`;
-    if (!items.length) {
-      h += `<div class="small">Ainda sem refeições para hoje. Define-as em "Semana".</div>`;
-    } else {
-      h += `<div class="stack">` + items.map(({ s, m }) => `<div><div class="label">${s.label}</div><div class="between"><span>${esc(m.name)}</span><span class="small">${m.kcal} kcal</span></div></div>`).join('') + `</div>`;
-      const kcal = items.reduce((a, x) => a + x.m.kcal, 0), pr = items.reduce((a, x) => a + x.m.protein, 0);
-      h += `<div class="small mt">Total planeado: ~${kcal} kcal · ~${pr} g de proteína</div>`;
-    }
-    h += `</div>`;
     return h;
   },
 
@@ -360,28 +346,6 @@ const VIEWS = {
       }</select>${typeof agendaTag === 'function' ? agendaTag(i) : ''}</label>`).join('') + `</div></div>`;
     if (typeof loadCard === 'function') h += loadCard() + weekAgenda();
 
-    // Refeições por dia
-    const filtered = MEALS.filter((m) => !ui.ing.length || m.base.some((b) => ui.ing.includes(b)));
-    const open = ui.openDay;
-    h += `<div class="card"><h2>Refeições por dia (meal prep)</h2><div class="small">Filtra pelos ingredientes-base para não variares demasiado.</div>
-      <div class="row mt">${INGREDIENTS.map((i) => pill(i, ui.ing.includes(i), 'ing', `data-v="${esc(i)}"`)).join('')}</div>
-      <div class="daytabs mt">${DAYS.map((d, i) => {
-        const dd = mp.days[i]; const has = dd.breakfast || dd.lunch || dd.snack || dd.dinner;
-        return `<button class="${open === i ? 'on' : ''}${has ? ' has' : ''}" data-a="mealDay" data-v="${i}">${d}</button>`;
-      }).join('')}</div>`;
-    SLOTS.forEach((s) => {
-      h += `<div class="mt"><div class="label">${DAYS[open]} · ${s.label}</div><div class="stack mt">` +
-        (filtered.filter((m) => s.types.includes(m.type)).map((m) => mealRow(m, mp.days[open][s.k] === m.id, `data-slot="${s.k}" data-id="${m.id}"`)).join('') || '<div class="small">Nenhuma opção com estes ingredientes.</div>') + `</div></div>`;
-    });
-    h += `<div class="row mt"><button class="btn ghost small" data-a="copyDay">Copiar ${DAYS[open]} para todos os dias</button><button class="btn ghost small" data-a="clearDay">Limpar ${DAYS[open]}</button></div></div>`;
-
-    // Lista de compras
-    const count = {};
-    mp.days.forEach((dd) => SLOTS.forEach((s) => { const m = dd[s.k] && mealById(dd[s.k]); if (m) m.base.forEach((b) => { count[b] = (count[b] || 0) + 1; }); }));
-    const entries = Object.entries(count).sort((a, b) => b[1] - a[1]);
-    h += `<div class="card"><h2>Ingredientes da semana</h2>` + (entries.length
-      ? `<div class="small">Para a lista de compras. O número é em quantas refeições aparece.</div><div class="row mt">${entries.map(([n, c]) => `<span class="tag">${esc(n)} × ${c}</span>`).join('')}</div>`
-      : `<div class="small">Escolhe refeições acima e a lista aparece aqui.</div>`) + `</div>`;
     return h;
   },
 
