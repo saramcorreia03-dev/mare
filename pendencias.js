@@ -67,6 +67,8 @@ function pendencias() {
     const pt = (cyc().pill.time || '22:00').split(':').map(Number), now = new Date().getHours() * 60 + new Date().getMinutes();
     if (!l.pill && t === todayStr() && !((packInfo(t) || {}).pause && !(packInfo(t) || {}).takes) && now >= pt[0] * 60 + pt[1] - 30) add('pill', 'Pílula de hoje', `hora habitual ${cyc().pill.time || '22:00'}`, now >= pt[0] * 60 + pt[1] + 120 ? 'late' : 'soon', 'goSub', 'ciclo');
   }
+  const bk = S.prefs && S.prefs.backupAt, hasData = Object.keys(h.logs).length > 3;
+  if (hasData && (!bk || dDiff(bk, t) >= 7)) add('backup', 'Cópia de segurança', bk ? `última há ${dDiff(bk, t)} dias` : 'ainda não fizeste nenhuma', bk && dDiff(bk, t) >= 14 ? 'late' : 'ok', 'export', '');
   const rank = { late: 0, soon: 1, ok: 2 };
   return out.sort((a, b) => rank[a.level] - rank[b.level]);
 }
@@ -141,3 +143,42 @@ A.quick = (d) => { const q = QUICK.find((x) => x.k === d.k); if (!q) return; con
 
 A.place = (d) => { const l = ensureLog(); l.place = l.place === d.v ? '' : d.v; save(); render(); };
 A.addPlace = () => { const v = ($('#pl-new').value || '').trim(); if (!v) return; const h = H(); h.places = (h.places && h.places.length ? h.places : ['Porto', 'Braga', 'Terceira']).slice(); if (!h.places.includes(v)) h.places.push(v); ensureLog().place = v; save(); render(); };
+
+/* Resumo da semana em poucas frases */
+function weeklyFacts() {
+  const logs = H().logs, t = effToday(), days = (end, n) => Array.from({ length: n }, (_, i) => addD(end, -(n - 1 - i)));
+  const cur = days(t, 7), prev = days(addD(t, -7), 7), f = [];
+  const vals = (ds_, k) => ds_.map((d) => nz((logs[d] || {})[k])).filter((v) => v != null);
+  const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+  const fm = (v) => v.toFixed(1).replace('.', ',');
+  const n = cur.filter((d) => logFilled(d)).length;
+  f.push({ w: 1, t: n ? `Registaste ${n} dia(s) em 7. Cada um conta, não precisa de ser todos.` : 'Esta semana não houve registos, e não faz mal. Começa por um toque nas carinhas.' });
+  [['pain', 'A dor', -1], ['energy', 'A energia', 1], ['mood', 'O humor', 1], ['stress', 'O stress', -1]].forEach(([k, lb, good]) => {
+    const a = vals(cur, k), b = vals(prev, k); if (a.length < 2 || b.length < 2) return;
+    const d = avg(a) - avg(b); if (Math.abs(d) < 1) return;
+    f.push({ w: 3 + Math.abs(d), t: `${lb} ${d > 0 ? 'subiu' : 'desceu'} em relação à semana passada (média ${fm(avg(a))} contra ${fm(avg(b))}).${d * good > 0 ? ' Boa notícia.' : ''}` });
+  });
+  const byPlace = {};
+  cur.forEach((d) => { const l = logs[d]; if (l && l.place && nz(l.sleep) != null) (byPlace[l.place] = byPlace[l.place] || []).push(nz(l.sleep)); });
+  const pl = Object.entries(byPlace).filter(([, v]) => v.length >= 1);
+  if (pl.length > 1) { const s = pl.map(([p, v]) => [p, avg(v)]).sort((x, y) => x[1] - y[1]); if (s[s.length - 1][1] - s[0][1] >= 0.5) f.push({ w: 4, t: `Dormiste pior em ${s[0][0]} (${fm(s[0][1])} h) do que em ${s[s.length - 1][0]} (${fm(s[s.length - 1][1])} h).` }); }
+  if (typeof dayLoad === 'function' && agendaAll().length) {
+    const heavy = cur.filter((d) => agendaFor(d).length && dayLoad(d).level === 'pesada');
+    const pH = heavy.map((d) => nz((logs[d] || {}).pain)).filter((v) => v != null), pO = cur.filter((d) => !heavy.includes(d)).map((d) => nz((logs[d] || {}).pain)).filter((v) => v != null);
+    if (pH.length && pO.length && avg(pH) - avg(pO) >= 1.5) f.push({ w: 5, t: `Nos dias pesados de agenda a dor foi mais alta (${fm(avg(pH))} contra ${fm(avg(pO))}).` });
+  }
+  if (typeof pillOn === 'function' && pillOn()) {
+    const p = cur.filter((d) => (packInfo(d) || {}).pause), a = cur.filter((d) => packInfo(d) && !packInfo(d).pause);
+    const vp = p.map((d) => nz((logs[d] || {}).energy)).filter((v) => v != null), va = a.map((d) => nz((logs[d] || {}).energy)).filter((v) => v != null);
+    if (vp.length >= 2 && va.length >= 2 && Math.abs(avg(vp) - avg(va)) >= 1.5) f.push({ w: 4, t: `A energia foi ${avg(vp) < avg(va) ? 'mais baixa' : 'mais alta'} nos dias de pausa da pílula.` });
+  }
+  const mg = cur.filter((d) => ((logs[d] || {}).sym || []).includes('Enxaqueca')).length;
+  if (mg) f.push({ w: 4, t: `Houve ${mg} dia(s) com enxaqueca. Anota a hora e se houve aura, para levares à médica.` });
+  return f.sort((a, b) => b.w - a.w).slice(0, 3).map((x) => x.t);
+}
+function reportCard(force) {
+  const wd = (new Date().getDay() + 6) % 7;
+  if (!force && wd !== 6 && wd !== 0) return '';
+  return `<div class="card note"><h2>A tua semana em poucas frases</h2><div class="stack mt">${weeklyFacts().map((x) => `<div>• ${esc(x)}</div>`).join('')}</div>
+    <div class="small mt">Padrões, não diagnósticos. Se algo te preocupar, fala com a médica.</div></div>`;
+}

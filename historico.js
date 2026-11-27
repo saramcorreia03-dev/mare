@@ -99,6 +99,7 @@ VIEWS.progresso = function () {
   const trained = dates.filter((d) => S.checkins[d] && S.checkins[d].done).length;
   const heavy = dates.filter((d) => agendaFor(d).length && dayLoad(d).level === 'pesada').length;
   const migr = dates.filter((d) => ((logs[d] || {}).sym || []).includes('Enxaqueca')).length;
+  o += reportCard(true);
   const tiles = [[withLog.length, 'dias com registo'], [trained, 'treinos feitos'], [avg(vals('sleep')) + (vals('sleep').length ? ' h' : ''), 'sono médio'], [avg(vals('energy')), 'energia média'],
     [avg(vals('stress')), 'stress médio'], [heavy, 'dias pesados'], [migr, 'dias com enxaqueca'], [agendaAll().length ? dates.filter((d) => agendaFor(d).length).length : '—', 'dias com compromissos']];
   o += `<div class="tiles">${tiles.map(([v, l]) => `<div class="tile"><div class="big">${v}</div><div class="small">${l}</div></div>`).join('')}</div>`;

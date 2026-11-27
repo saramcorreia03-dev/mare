@@ -295,7 +295,7 @@ const VIEWS = {
     const g = gid ? GROUPS[gid] : null;
     const ci = S.checkins[today] || {};
     let h = `<div class="quote">${esc(typeof dailyQuote === 'function' ? dailyQuote() : '')}</div><div class="sub" style="text-align:center">${DAYS_LONG[idx]}, ${fmtShort(today)}</div>`;
-    if (typeof nextStepCard === 'function') h += quickCard() + pendCard() + nextStepCard() + agendaCard();
+    if (typeof nextStepCard === 'function') h += quickCard() + pendCard() + nextStepCard() + reportCard() + agendaCard();
     if (typeof healthBanner === 'function') h += healthBanner();
 
     if (idx === 6) {
@@ -408,8 +408,8 @@ const VIEWS = {
 
     h += `<div class="card"><h2>Como te sentes hoje?</h2><textarea rows="3" data-c="note" placeholder="energia, ciclo, stress, motivação…">${esc(S.notes[today] || '')}</textarea><div class="small mt">Guarda sozinho quando saíres da caixa.</div></div>`;
 
-    h += `<div class="card"><h2>Cópia de segurança</h2><div class="small">Os dados ficam só neste aparelho. Exporta de vez em quando, ou para passares para outro aparelho.</div>
-      <div class="row mt"><button class="btn ghost small" data-a="export">Exportar dados</button>
+    h += `<div class="card"><h2>Cópia de segurança</h2><div class="small">Os dados (incluindo saúde, ciclo e medicação) ficam só neste aparelho. No telemóvel, "Guardar cópia" abre a partilha: escolhe Google Drive, email ou WhatsApp. Serve também para passares tudo para outro aparelho.</div>
+      <div class="row mt"><button class="btn ghost small" data-a="export">Guardar cópia</button>
       <label class="btn ghost small" style="cursor:pointer;display:inline-block">Importar dados<input type="file" accept="application/json" data-c="import" hidden></label></div></div>`;
     return h;
   }
@@ -453,10 +453,18 @@ const A = {
     const t = ds(new Date());
     S.weights = S.weights.filter((w) => w.date !== t); S.weights.push({ date: t, kg: v }); save(); render(); toast('Peso guardado');
   },
-  export: () => {
-    const blob = new Blob([JSON.stringify(S)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `mare-${ds(new Date())}.json`;
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  export: async () => {
+    const name = `mare-${ds(new Date())}.json`, blob = new Blob([JSON.stringify(S)], { type: 'application/json' });
+    let done = false;
+    try {
+      const file = new File([blob], name, { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Cópia da Maré' }); done = true; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    if (!done) {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    S.prefs = Object.assign({}, S.prefs, { backupAt: todayStr() }); save(); render(); toast('Cópia guardada');
   },
   openTimer: (d) => openTimer(d.id),
   tSound: () => { SOUND = SOUND === 'som' ? 'vibra' : SOUND === 'vibra' ? 'silencio' : 'som'; S.prefs = Object.assign({}, S.prefs, { sound: SOUND }); save(); if (SOUND === 'som') beep(520, 0.1); if (SOUND === 'vibra') buzz(60); drawTimer(); },
