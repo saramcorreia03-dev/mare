@@ -35,7 +35,7 @@ function hChart(dates, key, label, max, color) {
 
 function dayHasData(d) {
   const l = H().logs[d], c = S.checkins[d];
-  const hasLog = l && (['pain', 'painAM', 'energy', 'mood', 'stress', 'overload', 'sleep', 'sleepQ'].some((k) => nz(l[k]) != null) || (l.sym || []).length || l.notes || l.inhaler || l.flow);
+  const hasLog = l && (['pain', 'painAM', 'energy', 'mood', 'stress', 'overload', 'sleep', 'sleepQ'].some((k) => nz(l[k]) != null) || (l.sym || []).length || l.notes || l.inhaler || l.flow || l.place);
   return !!(hasLog || (c && (c.done || c.photo)) || agendaFor(d).length);
 }
 
@@ -47,6 +47,7 @@ function dayDetail(d) {
   const phy = Object.keys(l.physio || {}).filter((k) => l.physio[k]).length;
   const dl = evs.length ? dayLoad(d) : null;
   return `<div class="stack" style="margin-top:8px">
+    ${row('Onde', l.place ? esc(l.place) : '')}
     ${row('Sono', nn('sleep') ? nn('sleep') + ' h' + (nn('sleepQ') ? ` · qualidade ${nn('sleepQ')}` : '') : (nn('sleepQ') ? 'qualidade ' + nn('sleepQ') : ''))}
     ${row('Ao levantar', nn('painAM') ? 'dor ' + nn('painAM') : '')}${row('Energia', nn('energy'))}${row('Humor', nn('mood'))}${row('Dor', nn('pain'))}${row('Stress', nn('stress'))}${row('Sobrecarga', nn('overload'))}
     ${row('Sinais', (l.sym || []).map(esc).join(', '))}${row('Pesou', (l.load || []).map(esc).join(', '))}${row('Inalador', l.inhaler ? l.inhaler + ' vez(es)' : '')}${row('Recuperar', rests)}
@@ -63,6 +64,7 @@ function daySummaryChips(d) {
   if (nz(l.pain) != null) ch.push(`dor ${num1(nz(l.pain))}`);
   if (nz(l.stress) != null) ch.push(`stress ${num1(nz(l.stress))}`);
   if (nz(l.sleep) != null) ch.push(`${num1(nz(l.sleep))} h`);
+  if (l.place) ch.push('📍' + esc(l.place));
   if (c.done) ch.push('✓ treino');
   const evs = agendaFor(d); if (evs.length) ch.push(`${evs.length} comp.`);
   const ph = phaseOf(d); if (ph && ph.ph === 'mens') ch.push('🌑');
@@ -104,6 +106,14 @@ VIEWS.progresso = function () {
   const strip = dates.map((d) => { const p = phaseOf(d), l = logs[d] || {}; return `<i title="${fmtShort(d)}" style="flex:1;height:12px;background:${p ? PH_COLOR[p.ph] : 'var(--line)'};${l.flow ? 'outline:2px solid var(--terra-ink);outline-offset:-2px' : ''}"></i>`; }).join('');
   if (cycleStats().ps.length) o += `<div class="card"><strong>Ciclo</strong><div style="display:flex;gap:1px;margin-top:8px;border-radius:6px;overflow:hidden">${strip}</div>
     <div class="row small mt">${Object.keys(PHASES).map((k) => `<span><span class="dot" style="background:${PH_COLOR[k]};margin-right:4px"></span>${PHASES[k].name}</span>`).join('')}</div></div>`;
+
+  const byPlace = {};
+  dates.forEach((d) => { const l = logs[d]; if (l && l.place) (byPlace[l.place] = byPlace[l.place] || []).push(l); });
+  if (Object.keys(byPlace).length > 1) {
+    const av = (ls, k) => { const v = ls.map((x) => nz(x[k])).filter((x) => x != null); return v.length ? num1(v.reduce((a, b) => a + b, 0) / v.length) : '—'; };
+    o += `<div class="card"><strong>Por lugar</strong><div class="small">Médias dos dias em que registaste cada sítio.</div><div class="stack mt">${Object.entries(byPlace).map(([p, ls]) =>
+      `<div class="between"><span>📍 ${esc(p)} <span class="small">(${ls.length} dia${ls.length > 1 ? 's' : ''})</span></span><span class="small">sono ${av(ls, 'sleep')} · energia ${av(ls, 'energy')} · dor ${av(ls, 'pain')} · stress ${av(ls, 'stress')}</span></div>`).join('')}</div></div>`;
+  }
 
   const charts = HM.map(([k, lb, mx, col]) => hChart(dates, k, lb, mx, col)).join('');
   o += charts || `<div class="card"><div class="small">Sem registos de energia, humor, dor ou sono nestes ${n} dias. Faz o registo da manhã e da noite, ou traz o histórico em Saúde → Mais.</div></div>`;

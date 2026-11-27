@@ -126,7 +126,14 @@ function quickCard() {
     return `<div class="between"><span class="small" style="min-width:60px">${q.t}</span><div class="row nowrap" style="gap:6px">${q.f.map((e, i) =>
       `<button class="pill${sel === i ? ' on' : ''}" style="font-size:20px;padding:6px 8px" data-a="quick" data-k="${q.k}" data-i="${i}" aria-label="${q.t} ${i + 1} de 5">${e}</button>`).join('')}</div></div>`;
   };
-  return `<div class="card"><h2>Como estás?</h2><div class="small">Um toque em cada. O resto é opcional.</div><div class="stack mt">${QUICK.map(row).join('')}</div>
+  const hh = H(), places = hh.places && hh.places.length ? hh.places : ['Porto', 'Braga', 'Terceira'];
+  const placeRow = `<div class="mt"><div class="small">Onde estás?</div><div class="row mt">${places.map((pl) =>
+    `<button class="pill${l.place === pl ? ' on' : ''}" data-a="place" data-v="${esc(pl)}">📍 ${esc(pl)}</button>`).join('')}</div>
+    <div class="row nowrap mt"><input type="text" id="pl-new" placeholder="Outro sítio"><button class="btn ghost small" data-a="addPlace">Juntar</button></div></div>`;
+  return `<div class="card"><h2>Como estás?</h2><div class="small">Um toque em cada. O resto é opcional.</div><div class="stack mt">${QUICK.map(row).join('')}</div>${placeRow}
     <div class="mt"><button class="link small" data-a="goReg" data-v="manha">Mais detalhes (sono, sintomas, nota)</button></div></div>`;
 }
 A.quick = (d) => { const q = QUICK.find((x) => x.k === d.k); if (!q) return; const l = ensureLog(); l[d.k] = q.v[+d.i]; save(); render(); };
+
+A.place = (d) => { const l = ensureLog(); l.place = l.place === d.v ? '' : d.v; save(); render(); };
+A.addPlace = () => { const v = ($('#pl-new').value || '').trim(); if (!v) return; const h = H(); h.places = (h.places && h.places.length ? h.places : ['Porto', 'Braga', 'Terceira']).slice(); if (!h.places.includes(v)) h.places.push(v); ensureLog().place = v; save(); render(); };
