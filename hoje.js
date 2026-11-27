@@ -35,7 +35,8 @@ A.regOpen = () => { ui.regOpen = !ui.regOpen; render(); };
 
 function regProgress() {
   const l = H().logs[logDate()] || {};
-  let n = SCALES.filter((q) => scIdx(l, q) >= 0).length, tot = SCALES.length;
+  const CORE = ['sleepQ', 'energy', 'mood', 'overload', 'stress'], act = trackActive();
+  let n = SCALES.filter((q) => CORE.includes(q.k) && scIdx(l, q) >= 0).length + act.filter((it) => trkState(it, l) >= 0).length, tot = CORE.length + act.length;
   tot += 1; if (l.place) n++;
   if (pillOn() && !((packInfo(logDate()) || {}).pause && !(packInfo(logDate()) || {}).takes)) { tot += 1; if (l.pill) n++; }
   return [n, tot];
@@ -46,6 +47,7 @@ function regCard() {
   const places = h.places && h.places.length ? h.places : ['Porto', 'Braga', 'Terceira'];
   const when = ld === todayStr() ? 'Hoje' : 'Ontem';
   if (done && !ui.regOpen) return `<div class="card good"><div class="between"><div><h2>✓ ${when} no corpo: registado</h2><div class="small">${n} de ${tot}. Obrigada por cuidares de ti.</div></div><button class="btn ghost small" data-a="regOpen">Rever</button></div></div>`;
+  const CORE = ['sleepQ', 'energy', 'mood', 'overload', 'stress'];
   const row = (q) => {
     const s = scIdx(l, q);
     return `<div class="sc"><div class="between"><span>${q.t}</span><span class="small">${s >= 0 ? q.w[s] : 'por responder'}</span></div>
@@ -56,7 +58,10 @@ function regCard() {
     <div class="prog"><i style="width:${Math.round(n / tot * 100)}%"></i></div>`;
   if (ld === todayStr()) o += `<div class="small mt"><button class="link" data-a="regDay" data-v="${addD(todayStr(), -1)}">Registar o dia de ontem</button></div>`;
   if (ld !== todayStr()) o += `<div class="small mt">Estás a registar o dia de ontem. <button class="link" data-a="regDay" data-v="${todayStr()}">Passar para hoje</button></div>`;
-  o += `<div class="mt">${SCALES.map(row).join('')}</div>`;
+  o += `<div class="mt">${SCALES.filter((q) => CORE.includes(q.k)).map(row).join('')}</div>`;
+  const act = trackActive();
+  if (act.length) o += `<div class="label mt" style="color:var(--accent-ink)">A acompanhar</div><div class="mt">${act.map((it) => trkRow(it, l)).join('')}</div>`;
+  o += `<div class="small"><button class="link" data-a="goTrack">Mudar o que acompanho</button></div>`;
   o += `<div class="sc"><div class="small">Onde estás?</div><div class="row mt">${places.map((pl) => `<button class="pill${l.place === pl ? ' on' : ''}" data-a="place" data-v="${esc(pl)}">${esc(pl)}</button>`).join('')}</div></div>`;
   if (pillOn()) o += `<div class="mt"><button class="btn ${l.pill ? 'mint' : 'ghost'} small" data-a="pillTaken">${l.pill ? '✓ Pílula tomada' : 'Tomei a pílula'}</button></div>`;
   o += `<details class="mt acc"><summary>Acrescentar (sono em horas, sintomas, medicação, nota)</summary>
@@ -127,6 +132,7 @@ VIEWS.eu = function () {
   let o = `<div class="sub">Tudo o resto está aqui, quando precisares.</div><div class="stack">`;
   o += item('📈', 'Como tenho estado', 'Gráficos, dia a dia e peso', 'tab', 'progresso');
   o += item('🌙', 'Ciclo e pílula', 'Blister, menstruação, literacia', 'goSub', 'ciclo');
+  o += item('🎯', 'O que estou a acompanhar', 'Dor, enxaqueca e o que mais precisares', 'goTrack', '');
   o += item('💊', 'Medicação e consultas', 'Receitas, exames, ficha de emergência', 'goSub', 'mais');
   o += item('🦴', 'Fisioterapia', 'Perguntas, notas e exercícios', 'goSub', 'fisio');
   o += item('🌊', 'Treinos', 'Timers e movimento suave', 'tab', 'treinos');

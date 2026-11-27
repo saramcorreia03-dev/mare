@@ -35,7 +35,7 @@ function hChart(dates, key, label, max, color) {
 
 function dayHasData(d) {
   const l = H().logs[d], c = S.checkins[d];
-  const hasLog = l && (['pain', 'painAM', 'energy', 'mood', 'stress', 'overload', 'sleep', 'sleepQ'].some((k) => nz(l[k]) != null) || (l.sym || []).length || l.notes || l.inhaler || l.flow || l.place || l.pill);
+  const hasLog = l && (['pain', 'painAM', 'energy', 'mood', 'stress', 'overload', 'sleep', 'sleepQ'].some((k) => nz(l[k]) != null) || (l.sym || []).length || l.notes || l.inhaler || l.flow || l.place || l.pill || (l.t && Object.keys(l.t).length));
   return !!(hasLog || (c && (c.done || c.photo)) || agendaFor(d).length);
 }
 
@@ -133,9 +133,10 @@ Object.assign(A, {
 /* Mapa de cores: uma linha por medida, uma coluna por dia */
 function heatCard(dates) {
   const logs = H().logs, n = dates.length;
-  const rows = [['energy', 'Energia', true], ['mood', 'Humor', true], ['sleepQ', 'Sono', true], ['pain', 'Dor', false], ['overload', 'Sobrecarga', false], ['stress', 'Stress', false]];
+  const trk = (typeof trackActive === 'function' ? trackActive() : []).filter((t) => !t.legacy && t.type === 'scale');
+  const rows = [['energy', 'Energia', true], ['mood', 'Humor', true], ['sleepQ', 'Sono', true], ['pain', 'Dor', false], ['overload', 'Sobrecarga', false], ['stress', 'Stress', false]].concat(trk.map((t) => ['t:' + t.id, trackTitle(t), false]));
   const cell = (d, k, good) => {
-    const v = nz((logs[d] || {})[k]); if (v == null) return `<i title="${fmtShort(d)}"></i>`;
+    const v = k.startsWith('t:') ? (((logs[d] || {}).t || {})[k.slice(2)] != null ? ((logs[d] || {}).t[k.slice(2)]) * 2.5 : null) : nz((logs[d] || {})[k]); if (v == null) return `<i title="${fmtShort(d)}"></i>`;
     const a = (0.18 + 0.72 * Math.min(10, Math.max(0, v)) / 10).toFixed(2), col = good ? '63,94,69' : '181,117,95';
     return `<i title="${fmtShort(d)} · ${num1(v)}" style="background:rgba(${col},${a})"></i>`;
   };

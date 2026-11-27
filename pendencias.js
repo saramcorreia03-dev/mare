@@ -67,6 +67,7 @@ function pendencias() {
     const pt = (cyc().pill.time || '22:00').split(':').map(Number), now = new Date().getHours() * 60 + new Date().getMinutes();
     if (!l.pill && t === todayStr() && !((packInfo(t) || {}).pause && !(packInfo(t) || {}).takes) && now >= pt[0] * 60 + pt[1] - 30) add('pill', 'Pílula de hoje', `hora habitual ${cyc().pill.time || '22:00'}`, now >= pt[0] * 60 + pt[1] + 120 ? 'late' : 'soon', 'goSub', 'ciclo');
   }
+  if (typeof trackActive === 'function') trackActive().forEach((it) => { if (dDiff(it.start, t) >= 30 && (!it.rev || dDiff(it.rev, t) >= 30)) add('trk' + it.id, `Ainda acompanhas "${it.name}"?`, 'confirma uma vez por mês', 'soon', 'goTrack', ''); });
   const bk = S.prefs && S.prefs.backupAt, hasData = Object.keys(h.logs).length > 3;
   if (hasData && (!bk || dDiff(bk, t) >= 7)) add('backup', 'Cópia de segurança', bk ? `última há ${dDiff(bk, t)} dias` : 'ainda não fizeste nenhuma', bk && dDiff(bk, t) >= 14 ? 'late' : 'ok', 'export', '');
   const rank = { late: 0, soon: 1, ok: 2 };

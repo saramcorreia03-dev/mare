@@ -202,3 +202,5 @@ main { gap: 16px; }
 .hm .rw i { flex: 1; height: 20px; border-radius: 2px; background: rgba(42, 47, 38, .06); }
 .hm .rw i.pz { background: repeating-linear-gradient(45deg, rgba(192, 138, 116, .55), rgba(192, 138, 116, .55) 2px, transparent 2px, transparent 4px); }
 .hm .rw i.hv { background: var(--accent-ink); height: 8px; align-self: center; border-radius: 99px; }
+
+.hm .lb { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
