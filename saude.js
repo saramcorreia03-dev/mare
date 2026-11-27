@@ -64,7 +64,7 @@ function downloadFile(name, text, type) {
 
 /* ---------- Ícone e separador ---------- */
 ICONS.saude = '<path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/>';
-TABS.splice(4, 0, { id: 'saude', label: 'Saúde', title: 'Saúde' });
+TABS.push({ id: 'saude', label: 'Saúde', title: 'Saúde', hidden: true });
 
 /* ---------- Treino de recuperação ---------- */
 WORKOUTS.push({

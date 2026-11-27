@@ -10,12 +10,12 @@ const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const DAYS_LONG = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
 const GROUPS = {
-  pernas:    { label: 'Pernas (unilateral)', color: '#B8532F', workout: 'sexta' },
-  core:      { label: 'Lombar + Core',       color: '#52702F', workout: 'quarta' },
-  bracos:    { label: 'Braços',              color: '#A8691A', workout: 'quinta' },
-  saltos:    { label: 'Saltos e equilíbrio', color: '#8A6A1F', workout: 'terca' },
-  caminhada: { label: 'Caminhada',           color: '#7A5842' },
-  descanso:  { label: 'Descanso',            color: '#8C7260' }
+  pernas:    { label: 'Pernas (unilateral)', color: '#C4604A', workout: 'sexta' },
+  core:      { label: 'Lombar + Core',       color: '#2F7357', workout: 'quarta' },
+  bracos:    { label: 'Braços',              color: '#1D6670', workout: 'quinta' },
+  saltos:    { label: 'Saltos e equilíbrio', color: '#6A5FA8', workout: 'terca' },
+  caminhada: { label: 'Caminhada',           color: '#3F7F9C' },
+  descanso:  { label: 'Descanso',            color: '#6B8489' }
 };
 
 const TEMPLATES = {
@@ -247,25 +247,28 @@ const ICONS = {
   semana: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 11h18"/>',
   treinos: '<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',
   comida: '<path d="M6 3v8a3 3 0 0 0 3 3v7M9 3v8M12 3v8a3 3 0 0 1-3 3M17 3c-2 2-2 6 0 8v10"/>',
+  eu: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/>',
   progresso: '<path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/>'
 };
 const TABS = [
   { id: 'hoje', label: 'Hoje', title: 'Hoje' },
   { id: 'semana', label: 'Semana', title: 'A tua semana' },
-  { id: 'treinos', label: 'Treinos', title: 'Treinos com timer' },
-  { id: 'progresso', label: 'Progresso', title: 'Progresso' }
+  { id: 'treinos', label: 'Treinos', title: 'Treinos com timer', hidden: true },
+  { id: 'progresso', label: 'Histórico', title: 'Histórico', hidden: true },
+  { id: 'eu', label: 'Eu', title: 'Eu' }
 ];
 
 function renderNav() {
-  $('#nav').innerHTML = TABS.map((t) =>
-    `<button class="${ui.tab === t.id ? 'on' : ''}" data-a="tab" data-v="${t.id}"><svg viewBox="0 0 24 24">${ICONS[t.id]}</svg>${t.label}${typeof navBadge === 'function' ? navBadge(t.id) : ''}</button>`).join('');
+  const cur = TABS.find((x) => x.id === ui.tab);
+  $('#nav').innerHTML = TABS.filter((t) => !t.hidden).map((t) =>
+    `<button class="${ui.tab === t.id || (t.id === 'eu' && cur && cur.hidden) ? 'on' : ''}" data-a="tab" data-v="${t.id}"><svg viewBox="0 0 24 24">${ICONS[t.id]}</svg>${t.label}${typeof navBadge === 'function' ? navBadge(t.id) : ''}</button>`).join('');
 }
 
 function render() {
   const y = window.scrollY;
   const t = TABS.find((x) => x.id === ui.tab);
   $('#title').textContent = t.title;
-  $('#view').innerHTML = VIEWS[ui.tab]();
+  $('#view').innerHTML = (t.hidden ? '<button class="link back" data-a="tab" data-v="eu">← Eu</button>' : '') + VIEWS[ui.tab]();
   document.body.classList.toggle('calm', !!(S.prefs && S.prefs.calm));
   renderNav();
   const f = ui.focus && document.getElementById(ui.focus);
@@ -420,8 +423,8 @@ function weightChart(ws) {
   const pt = (w, i) => [10 + (i / (ws.length - 1)) * (W - 20), H - 10 - ((w.kg - min) / (max - min || 1)) * (H - 20)];
   const pts = ws.map(pt);
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;margin-top:14px" role="img" aria-label="Evolução do peso">
-    <polyline fill="none" stroke="#52702F" stroke-width="2.5" points="${pts.map((p) => p.join(',')).join(' ')}"/>
-    ${pts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#C9714E"/>`).join('')}</svg>`;
+    <polyline fill="none" stroke="#1D6670" stroke-width="2.5" points="${pts.map((p) => p.join(',')).join(' ')}"/>
+    ${pts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#E8907A"/>`).join('')}</svg>`;
 }
 
 /* ---------- Ações ---------- */
