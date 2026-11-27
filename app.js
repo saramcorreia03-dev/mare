@@ -259,7 +259,7 @@ const TABS = [
 
 function renderNav() {
   $('#nav').innerHTML = TABS.map((t) =>
-    `<button class="${ui.tab === t.id ? 'on' : ''}" data-a="tab" data-v="${t.id}"><svg viewBox="0 0 24 24">${ICONS[t.id]}</svg>${t.label}</button>`).join('');
+    `<button class="${ui.tab === t.id ? 'on' : ''}" data-a="tab" data-v="${t.id}"><svg viewBox="0 0 24 24">${ICONS[t.id]}</svg>${t.label}${typeof navBadge === 'function' ? navBadge(t.id) : ''}</button>`).join('');
 }
 
 function render() {
@@ -296,7 +296,7 @@ const VIEWS = {
     const g = gid ? GROUPS[gid] : null;
     const ci = S.checkins[today] || {};
     let h = `<div class="quote">${esc(typeof dailyQuote === 'function' ? dailyQuote() : '')}</div><div class="sub" style="text-align:center">${DAYS_LONG[idx]}, ${fmtShort(today)}</div>`;
-    if (typeof nextStepCard === 'function') h += nextStepCard() + agendaCard();
+    if (typeof nextStepCard === 'function') h += nextStepCard() + pendCard() + agendaCard();
     if (typeof healthBanner === 'function') h += healthBanner();
 
     if (idx === 6) {

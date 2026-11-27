@@ -261,7 +261,7 @@ VIEWS.saude = function () {
       : `<textarea rows="${rows}" data-c="emerg" data-k="${k}">${esc(h.emerg[k] || '')}</textarea>`}`).join('')}
     <button class="btn small" data-a="printSheet">Imprimir ou guardar PDF</button></div></div>`;
 
-  M += clinicalCard() + weightsCard() + loadInsightsCard();
+  M += popSettingCard() + clinicalCard() + weightsCard() + loadInsightsCard();
   M += `<div class="card"><h2>Importar agenda</h2><div class="small">Aulas, fisioterapia, consultas e prazos, a partir de um ficheiro. Ficam só neste aparelho. Dá para repetir sempre que a agenda mudar.</div>
     <div class="row mt"><label class="btn ghost small" style="cursor:pointer;display:inline-block">Escolher ficheiro<input type="file" accept="application/json" data-c="impAgenda" hidden></label></div></div>`;
 
@@ -397,3 +397,4 @@ document.addEventListener('input', (e) => {
 /* ---------- Arranque ---------- */
 if (/^#(manha|noite)$/.test(location.hash)) { ui.tab = 'saude'; ui.sub = 'registo'; ui.focus = 'c-' + location.hash.slice(1); }
 render();
+maybePop();

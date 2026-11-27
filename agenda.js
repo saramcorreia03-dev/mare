@@ -159,7 +159,7 @@ Object.assign(C, {
           if (cur.some((x) => x.date === e.date && x.start === e.start && x.title === e.title)) return;
           cur.push({ date: e.date, start: e.start || '', end: e.end || '', title: String(e.title), place: e.place || '', kind: KIND_ICON[e.kind] ? e.kind : 'outro' }); n++;
         });
-        S.agenda = cur; save(); render(); toast(`Agenda: ${n} compromisso(s) novo(s)`);
+        S.agenda = cur; S.prefs = Object.assign({}, S.prefs, { agendaAt: todayStr() }); save(); render(); toast(`Agenda: ${n} compromisso(s) novo(s)`);
       } catch (err) { toast('Ficheiro inválido'); }
     };
     r.readAsText(f);

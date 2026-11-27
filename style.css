@@ -162,3 +162,11 @@ body.calm .card { box-shadow: none; }
 .tile { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
 .tile .big { font-size: 26px; }
 .acc summary span { margin-top: 2px; }
+
+.bdg { position: absolute; top: 2px; margin-left: 14px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 99px; background: var(--terra-ink); color: #fff; font-size: 10px; line-height: 16px; text-align: center; font-weight: 700; }
+nav#nav button { position: relative; }
+#pop { position: fixed; inset: 0; background: rgba(59, 31, 23, .45); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+#pop[hidden] { display: none; }
+#pop .sheet { width: 100%; max-width: 480px; background: #FFF8EC; border-radius: 22px 22px 0 0; padding: 20px 18px calc(22px + env(safe-area-inset-bottom)); max-height: 80vh; overflow-y: auto; box-shadow: 0 -8px 30px rgba(59, 31, 23, .25); }
+#pop .sheet h2 { margin: 0 0 4px; font-family: var(--serif); font-size: 22px; }
+body.calm #pop { background: rgba(59, 31, 23, .25); }
