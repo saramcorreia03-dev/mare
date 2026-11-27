@@ -41,8 +41,10 @@ function dailyQuote() {
   const d = new Date();
   return QUOTES[Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5) % QUOTES.length];
 }
+/* Dia a que o registo se refere: depois da meia-noite e até às 5h, é o dia anterior */
+function logDate() { return ui.regDate || (new Date().getHours() < 5 ? addD(todayStr(), -1) : todayStr()); }
 function ensureLog() {
-  const h = H(), t = todayStr();
+  const h = H(), t = logDate();
   if (!h.logs[t]) h.logs[t] = { sym: [], meds: {} };
   const l = h.logs[t]; if (!l.sym) l.sym = []; if (!l.meds) l.meds = {};
   return l;
@@ -95,19 +97,19 @@ WORKOUTS.push({
 
 /* ---------- Cartões na página Hoje ---------- */
 function nextStepCard() {
-  const h = H(), l = h.logs[todayStr()], hr = new Date().getHours();
+  const hr = new Date().getHours(), h = H(), l = h.logs[hr < 5 ? addD(todayStr(), -1) : todayStr()];
   const amDone = l && (l.energy != null || l.sleep != null || l.painAM != null);
   const pmDone = l && (l.mood != null || l.pain != null);
   const left = physioToday().filter((e) => !((l && l.physio) || {})[e.id]).length;
   const box = (title, sub, btn) => `<div class="card note"><div class="label">Próximo passo</div><div class="between"><div><strong>${title}</strong><div class="small">${sub}</div></div>${btn}</div></div>`;
-  if (hr < 15 && !amDone) return box('Bom dia. Como acordaste?', 'Registo da manhã, 30 segundos.', `<button class="btn small" data-a="goReg" data-v="manha">Registar</button>`);
+  if (hr >= 5 && hr < 15 && !amDone) return box('Bom dia. Como acordaste?', 'Registo da manhã, 30 segundos.', `<button class="btn small" data-a="goReg" data-v="manha">Registar</button>`);
   if (left) return box('Fisioterapia de hoje', `${left} exercício(s) por fazer.`, `<button class="btn small" data-a="goSub" data-v="fisio">Ver</button>`);
-  if (hr >= 19 && !pmDone) return box('Como correu o dia?', 'Registo da noite, 1 minuto.', `<button class="btn small" data-a="goReg" data-v="noite">Registar</button>`);
+  if ((hr >= 19 || hr < 5) && !pmDone) return box('Como correu o dia?', 'Registo da noite, 1 minuto.', `<button class="btn small" data-a="goReg" data-v="noite">Registar</button>`);
   return '';
 }
 
 function healthBanner() {
-  const h = H(), l = h.logs[todayStr()];
+  const h = H(), l = h.logs[logDate()];
   let o = '';
   const hr = new Date().getHours();
   const amDone = l && (l.energy != null || l.sleep != null || l.painAM != null);
@@ -194,12 +196,16 @@ function restCard() {
 
 /* ---------- Ecrã Saúde ---------- */
 VIEWS.saude = function () {
-  const h = H(), l = h.logs[todayStr()] || { sym: [], meds: {} };
+  const h = H(), l = h.logs[logDate()] || { sym: [], meds: {} };
   const val = (k) => (l[k] == null || l[k] === '' ? '—' : l[k]);
   const sl = (k, label) => `<div class="lbl"><span>${label}</span><b id="v-${k}">${val(k)}</b></div>
     <input class="range" type="range" min="0" max="10" step="1" value="${l[k] == null ? 5 : l[k]}" data-c="hlog" data-k="${k}" data-live="v-${k}" aria-label="${label}">`;
 
   let R = '', M = '';
+  const ld = logDate(), yest = addD(todayStr(), -1), wdn = (d) => DAYS[(parse(d).getDay() + 6) % 7];
+  R += `<div class="card"><div class="label">A registar</div><div class="row mt">${pill(`Ontem · ${wdn(yest)} ${fmtShort(yest)}`, ld === yest, 'regDay', `data-v="${yest}"`)}${pill(`Hoje · ${wdn(todayStr())} ${fmtShort(todayStr())}`, ld === todayStr(), 'regDay', `data-v="${todayStr()}"`)}</div>
+    <div class="row nowrap mt"><input type="date" id="reg-date" value="${ld}" max="${todayStr()}"><button class="btn ghost small" data-a="regPick">Ir para o dia</button></div>
+    <div class="small mt">${ld !== todayStr() ? 'Estás a registar um dia que já passou.' : 'Depois da meia-noite, o registo da noite vai para o dia anterior.'}</div></div>`;
 
   const morning = `<div class="card" id="c-manha"><h2>🌅 Ao acordar</h2><div class="small">Por volta das 8h30.</div>
     <div class="lbl"><span>Horas de sono</span></div>
@@ -282,6 +288,8 @@ Object.assign(A, {
   load: (d) => { const l = ensureLog(); l.load = l.load || []; l.load = l.load.includes(d.v) ? l.load.filter((x) => x !== d.v) : [...l.load, d.v]; save(); render(); },
   rest: (d) => { const l = ensureLog(); l.rest = l.rest || {}; l.rest[d.v] = !l.rest[d.v]; save(); render(); },
   goReg: (d) => { ui.tab = 'saude'; ui.sub = 'registo'; ui.focus = 'c-' + d.v; render(); },
+  regDay: (d) => { ui.regDate = d.v; render(); },
+  regPick: () => { const v = $('#reg-date').value; if (!isDate(v) || v > todayStr()) { toast('Escolhe um dia que já tenha passado'); return; } ui.regDate = v; render(); },
   goSub: (d) => { ui.tab = 'saude'; ui.sub = d.v; window.scrollTo(0, 0); render(); },
   recovery: (d) => { H().recovery = d.v === '1'; ui.showAll = false; save(); render(); toast(d.v === '1' ? 'Modo recuperação ligado' : 'Modo recuperação desligado'); },
   showAll: () => { ui.showAll = true; render(); },
@@ -362,7 +370,10 @@ Object.assign(C, {
           if (x && isDate(x.d) && x.n && x.v != null && !h.labs.some((r) => r.d === x.d && r.n === x.n)) h.labs.push({ d: x.d, n: String(x.n).trim(), v: +x.v, u: x.u || '', min: x.min == null ? null : +x.min, max: x.max == null ? null : +x.max });
         });
         (data.meds || []).forEach((x) => {
-          if (x && x.name && !h.meds.some((m) => m.name === x.name)) h.meds.push({ id: newId(), name: String(x.name), dose: String(x.dose || ''), end: isDate(x.end) ? x.end : '' });
+          if (!x || !x.name) return;
+          const old = x.was && h.meds.find((m) => m.name === x.was);
+          if (old) { old.name = String(x.name); old.dose = String(x.dose || old.dose || ''); return; }
+          if (!h.meds.some((m) => m.name === x.name)) h.meds.push({ id: newId(), name: String(x.name), dose: String(x.dose || ''), end: isDate(x.end) ? x.end : '' });
         });
         const fi = data.ficha || {}, map = { nome: 'f_nome', cond: 'f_cond', alerg: 'f_alerg', meds: 'f_med', medico: 'f_mf', sangue: 'f_sangue', notas: 'f_notas' };
         Object.entries(map).forEach(([k, src]) => { if (fi[src] && !h.emerg[k]) h.emerg[k] = String(fi[src]); });
