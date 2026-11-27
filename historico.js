@@ -40,14 +40,14 @@ function dayHasData(d) {
 }
 
 function dayDetail(d) {
-  const l = H().logs[d] || {}, c = S.checkins[d] || {}, evs = agendaFor(d), ph = phaseOf(d);
+  const l = H().logs[d] || {}, c = S.checkins[d] || {}, evs = agendaFor(d), ph = pillOn() ? null : phaseOf(d);
   const row = (k, v) => (v ? `<div class="between" style="align-items:flex-start"><span class="small">${k}</span><span style="text-align:right">${v}</span></div>` : '');
   const nn = (k) => (nz(l[k]) != null ? num1(nz(l[k])) : '');
   const rests = Object.keys(l.rest || {}).filter((k) => l.rest[k]).map((k) => (RESTS.find((r) => r[0] === k) || [k, k])[1]).join(', ');
   const phy = Object.keys(l.physio || {}).filter((k) => l.physio[k]).length;
   const dl = evs.length ? dayLoad(d) : null;
   return `<div class="stack" style="margin-top:8px">
-    ${row('Onde', l.place ? esc(l.place) : '')}${row('Pílula', l.pill ? 'tomada ✓' : '')}
+    ${row('Onde', l.place ? esc(l.place) : '')}${row('Pílula', (l.pill ? 'tomada ✓' : '') + (pillOn() && packInfo(d) ? ` · dia ${packInfo(d).n} de ${packInfo(d).tot}${packInfo(d).pause ? ' (pausa)' : ''}` : ''))}
     ${row('Sono', nn('sleep') ? nn('sleep') + ' h' + (nn('sleepQ') ? ` · qualidade ${nn('sleepQ')}` : '') : (nn('sleepQ') ? 'qualidade ' + nn('sleepQ') : ''))}
     ${row('Ao levantar', nn('painAM') ? 'dor ' + nn('painAM') : '')}${row('Energia', nn('energy'))}${row('Humor', nn('mood'))}${row('Dor', nn('pain'))}${row('Stress', nn('stress'))}${row('Sobrecarga', nn('overload'))}
     ${row('Sinais', (l.sym || []).map(esc).join(', '))}${row('Pesou', (l.load || []).map(esc).join(', '))}${row('Inalador', l.inhaler ? l.inhaler + ' vez(es)' : '')}${row('Recuperar', rests)}
@@ -67,7 +67,7 @@ function daySummaryChips(d) {
   if (l.place) ch.push('📍' + esc(l.place));
   if (c.done) ch.push('✓ treino');
   const evs = agendaFor(d); if (evs.length) ch.push(`${evs.length} comp.`);
-  const ph = phaseOf(d); if (ph && ph.ph === 'mens') ch.push('🌑');
+  const ph = pillOn() ? null : phaseOf(d); if (ph && ph.ph === 'mens') ch.push('🌑');
   return ch.join(' · ');
 }
 
@@ -104,7 +104,7 @@ VIEWS.progresso = function () {
   o += `<div class="tiles">${tiles.map(([v, l]) => `<div class="tile"><div class="big">${v}</div><div class="small">${l}</div></div>`).join('')}</div>`;
 
   const strip = dates.map((d) => { const p = phaseOf(d), l = logs[d] || {}; return `<i title="${fmtShort(d)}" style="flex:1;height:12px;background:${p ? PH_COLOR[p.ph] : 'var(--line)'};${l.flow ? 'outline:2px solid var(--terra-ink);outline-offset:-2px' : ''}"></i>`; }).join('');
-  if (cycleStats().ps.length) o += `<div class="card"><strong>Ciclo</strong><div style="display:flex;gap:1px;margin-top:8px;border-radius:6px;overflow:hidden">${strip}</div>
+  if (!pillOn() && cycleStats().ps.length) o += `<div class="card"><strong>Ciclo</strong><div style="display:flex;gap:1px;margin-top:8px;border-radius:6px;overflow:hidden">${strip}</div>
     <div class="row small mt">${Object.keys(PHASES).map((k) => `<span><span class="dot" style="background:${PH_COLOR[k]};margin-right:4px"></span>${PHASES[k].name}</span>`).join('')}</div></div>`;
 
   const byPlace = {};

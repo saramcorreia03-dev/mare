@@ -80,6 +80,28 @@ function nextPeriod(st) {
 }
 
 /* ---------- Padrões aprendidos a partir dos registos ---------- */
+const PACK_GROUPS = { act: 'Comprimidos ativos', pause: 'Pausa (comprimidos inativos)' };
+function packPatterns() {
+  const logs = H().logs, by = { act: { days: 0, sums: {}, ns: {}, sym: {} }, pause: { days: 0, sums: {}, ns: {}, sym: {} } };
+  let total = 0;
+  Object.entries(logs).forEach(([date, l]) => {
+    const pi = packInfo(date); if (!pi) return;
+    const b = by[pi.pause ? 'pause' : 'act']; b.days++; total++;
+    METRICS.forEach(([k]) => { if (l[k] != null && l[k] !== '') { b.sums[k] = (b.sums[k] || 0) + Number(l[k]); b.ns[k] = (b.ns[k] || 0) + 1; } });
+    (l.sym || []).forEach((s) => { b.sym[s] = (b.sym[s] || 0) + 1; });
+  });
+  const avg = (b, k) => (b.ns[k] ? b.sums[k] / b.ns[k] : null);
+  const insights = [];
+  METRICS.forEach(([k, label]) => {
+    if ((by.act.ns[k] || 0) < 3 || (by.pause.ns[k] || 0) < 3) return;
+    const a = avg(by.act, k), p = avg(by.pause, k), bad = k === 'pain' || k === 'overload' || k === 'stress';
+    const diff = p - a; if (Math.abs(diff) < 1.5) return;
+    const f = (v) => v.toFixed(1).replace('.', ',');
+    insights.push(`${label} ${diff > 0 ? 'mais alta' : 'mais baixa'} nos dias de pausa (${f(p)} contra ${f(a)} nos comprimidos ativos)${bad && diff > 0 ? '' : ''}.`);
+  });
+  return { by, avg, total, insights };
+}
+
 function cyclePatterns() {
   const st = cycleStats(), logs = H().logs, by = {};
   Object.keys(PHASES).forEach((k) => { by[k] = { days: 0, sums: {}, ns: {}, sym: {} }; });
@@ -140,13 +162,33 @@ function pillCard() {
   return o + `</div>`;
 }
 
+function pillLiteracy() {
+  const sec = (t, b, open) => `<details class="acc"${open ? ' open' : ''}><summary>${t}</summary>${b}</details>`;
+  return `<div class="card"><h2>Pílula: o que muda</h2><div class="small">Informação geral, não substitui a tua médica.</div><div class="stack mt">` +
+    sec('O que acontece no corpo', '<p>A pílula combinada traz estrogénio e progestagénio sintéticos. Mantém as hormonas mais estáveis e, na maioria das pessoas, impede a ovulação. Sem ovulação, não há as subidas e descidas naturais do ciclo.</p>', true) +
+    sec('A menstruação já não é um ciclo', '<p>O sangramento que vem na pausa (ou nos comprimidos inativos) é uma hemorragia de privação, provocada pela queda das hormonas do comprimido. Costuma ser mais curto e leve, e regular, mas isso vem do blister e não do teu ciclo natural.</p>') +
+    sec('O que isto muda na app', '<p>As fases (folicular, ovulação, lútea) e as previsões deixam de ser fiáveis, por isso a app passa a comparar os dias de comprimidos ativos com os dias de pausa. Não serve para prever ovulação.</p>') +
+    sec('SOP e pílula', '<p>Na síndrome do ovário poliquístico a pílula é muitas vezes usada para regularizar o sangramento e controlar sintomas como acne ou excesso de pelo. Regulariza o sangramento, mas não trata a causa, e pode esconder o teu ciclo natural. Quando parares, o ciclo pode voltar a ser irregular.</p>') +
+    sec('Efeitos que vale a pena registar', '<p>Dores de cabeça ou enxaqueca (sobretudo se mudarem de padrão ou com sintomas visuais), humor, sensibilidade nos seios, náuseas, inchaço, spotting (pequenas perdas fora da pausa) e dor ou inchaço numa perna. Regista-os nos teus registos para levares à médica.</p>') +
+    sec('Esquecimentos', '<p>Se te esqueceres de um comprimido, segue o folheto da tua pílula (depende de qual e de quando foi). Se tiveres dúvidas, pergunta à farmácia ou à médica. A eficácia contracetiva pode baixar.</p>') +
+    `</div></div>`;
+}
+
 function cicloView() {
   const h = H(), st = cycleStats(), today = todayStr(), l = h.logs[today] || {};
   const cur = phaseOf(today, st), nxt = nextPeriod(st);
   let o = pillCard();
 
-  o += `<div class="card ${cur ? 'good' : ''}"><div class="label">Hoje</div>`;
-  if (cur) {
+  const pk = pillOn() ? packInfo(today) : null;
+  o += `<div class="card ${cur || pk ? 'good' : ''}"><div class="label">Hoje</div>`;
+  if (pillOn()) {
+    if (pk) {
+      const tipo = pk.pause ? (pk.takes ? 'Comprimidos inativos: é aqui que costuma vir a menstruação.' : 'Pausa: é aqui que costuma vir a menstruação.') : 'Comprimidos ativos.';
+      o += `<div class="big">💊 Dia ${pk.n} de ${pk.tot} do blister</div><div class="small mt">${tipo} Com a pílula não há fases naturais, por isso a app segue o blister.</div>`;
+      const left = pk.pause ? 0 : pk.act - pk.n + 1;
+      if (!pk.pause) o += `<div class="small mt">Faltam ${left} dia(s) de comprimidos ativos. A pausa começa em ${fmtShort(addD(today, left))}.</div>`;
+    } else o += `<div class="big">💊 Pílula</div><div class="small mt">Diz acima em que dia do blister estás e a app passa a seguir o blister.</div>`;
+  } else if (cur) {
     const P = PHASES[cur.ph];
     o += `<div class="big">${P.icon} Dia ${cur.day} · fase ${P.name.toLowerCase()}${pillOn() ? ' (estimativa)' : ''}</div><div class="small mt">${P.mare}</div>`;
     if (nxt) o += `<div class="small mt">Próxima menstruação por volta de <b>${fmtShort(nxt.date)}</b>${nxt.spread != null ? ` (entre ${fmtShort(nxt.lo)} e ${fmtShort(nxt.hi)})` : ' (estimativa, ainda com poucos ciclos)'}.${daysUntil(nxt.date) < -2 ? ' A previsão já passou. Os ciclos variam, mas se passarem meses sem menstruar fala com a médica.' : ''}</div>`;
@@ -159,21 +201,23 @@ function cicloView() {
     <div class="lbl"><span>Esqueceste-te de marcar? Escolhe o primeiro dia</span></div>
     <div class="row nowrap"><input type="date" id="pd-date"><button class="btn small" data-a="periodAdd">Adicionar</button></div></div>`;
 
-  const pat = cyclePatterns();
+  const pat = pillOn() && pk ? packPatterns() : cyclePatterns();
+  const groups = pillOn() && pk ? PACK_GROUPS : null;
   o += `<div class="card"><h2>O que a app aprendeu contigo</h2>`;
   if (pat.total < 10) {
     o += `<div class="small">Precisa de uns 2 ciclos de registos (manhã e noite) para perceber o teu padrão. Por agora tem ${pat.total} dia(s) ligados a uma fase.</div>`;
   } else {
     if (pat.insights.length) o += `<div class="stack">${pat.insights.map((t) => `<div>• ${esc(t)}</div>`).join('')}</div><div class="small mt">São padrões nos teus registos, não certezas. Mostra à tua médica.</div>`;
     else o += `<div class="small">Ainda não se vê um padrão claro entre fases. Continua a registar.</div>`;
-    o += `<div class="mt">${Object.keys(PHASES).map((ph) => {
+    o += `<div class="mt">${Object.keys(groups || PHASES).map((ph) => {
       const b = pat.by[ph]; if (!b.days) return '';
-      return `<div class="hist"><div><strong>${PHASES[ph].icon} ${PHASES[ph].name}</strong><div class="small">${b.days} dia(s)</div></div><div class="small" style="text-align:right">${METRICS.map(([k, lb]) => { const v = pat.avg(b, k); return v == null ? '' : `${lb} ${v.toFixed(1).replace('.', ',')}`; }).filter(Boolean).join(' · ')}</div></div>`;
+      return `<div class="hist"><div><strong>${groups ? (ph === 'act' ? '💊 ' : '🌑 ') + groups[ph] : PHASES[ph].icon + ' ' + PHASES[ph].name}</strong><div class="small">${b.days} dia(s)</div></div><div class="small" style="text-align:right">${METRICS.map(([k, lb]) => { const v = pat.avg(b, k); return v == null ? '' : `${lb} ${v.toFixed(1).replace('.', ',')}`; }).filter(Boolean).join(' · ')}</div></div>`;
     }).join('')}</div>`;
   }
   o += `</div>`;
 
-  o += `<div class="card"><h2>Literacia: as quatro fases</h2><div class="small">Toca para abrir. É informação geral; o teu corpo pode ser diferente.</div><div class="stack mt">` +
+  if (pillOn()) o += pillLiteracy();
+  o += `<div class="card"><h2>Literacia: as quatro fases${pillOn() ? ' (ciclo natural, só como referência)' : ''}</h2><div class="small">Toca para abrir. É informação geral; o teu corpo pode ser diferente.</div><div class="stack mt">` +
     Object.keys(PHASES).map((ph) => { const P = PHASES[ph]; return `<details class="acc"${cur && cur.ph === ph ? ' open' : ''}><summary>${P.icon} ${P.name}</summary>
       <p><b>O que acontece.</b> ${P.what}</p><p><b>Como te podes sentir.</b> ${P.feel}</p><p><b>O que pode ajudar.</b> ${P.help}</p><p><b>Na Maré.</b> ${P.mare}</p></details>`; }).join('') + `</div></div>`;
 
@@ -214,6 +258,7 @@ Object.assign(A, {
 
 /* Cartão na página Hoje */
 function cycleBanner() {
+  if (pillOn()) return '';
   const st = cycleStats(), cur = phaseOf(todayStr(), st); if (!cur) return '';
   const P = PHASES[cur.ph], pre = cur.ph === 'lut' && cur.day >= cur.L - 3;
   const txt = pre ? 'Estás nos dias antes da menstruação. Cansaço e humor mais sensível são comuns. Maré média ou baixa pode cair bem.'
