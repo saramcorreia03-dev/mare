@@ -186,7 +186,7 @@ function clinicalCard() {
 }
 
 function restCard() {
-  const l = H().logs[todayStr()] || {}, calm = S.prefs && S.prefs.calm, high = l.overload != null && l.overload >= 6;
+  const l = H().logs[logDate()] || {}, calm = S.prefs && S.prefs.calm, high = l.overload != null && l.overload >= 6;
   if (!calm && !high) return '';
   const r = l.rest || {};
   return `<div class="card good"><h2>Recuperar</h2><div class="small">Pequenas coisas que te fazem bem. Toca nas que fizeres.</div>
